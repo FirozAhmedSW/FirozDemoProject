@@ -16,7 +16,7 @@ public class HomeController : Controller
     public IActionResult Index()
     {
         // ✅ Session এ Data Set করা
-        HttpContext.Session.SetString("UserName", "Firoz");
+       // HttpContext.Session.SetString("UserName", "Firoz");
 
         // ✅ Session থেকে Data নেওয়া
         var name = HttpContext.Session.GetString("UserName");
