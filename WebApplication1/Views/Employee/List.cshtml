@@ -105,32 +105,71 @@
                     </table>
                 </div>
             </div>
-            <!-- Pagination -->
+
             <nav aria-label="Employee List Pagination" class="mt-4">
-                <ul class="pagination justify-content-center mb-0">
-                    @if (Model.PageNumber == 1)
-                    {
-                        <li class="page-item disabled"><span class="page-link">First ⏮️</span></li>
-                        <li class="page-item disabled"><span class="page-link">Previous ⬅️</span></li>
-                    }
-                    else
-                    {
-                        <li class="page-item"><a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(1))">First ⏮️</a></li>
-                        <li class="page-item"><a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.PageNumber - 1))">Previous ⬅️</a></li>
-                    }
-                    <li class="page-item active"><span class="page-link">@Model.PageNumber</span></li>
-                    @if (Model.PageNumber == Model.TotalPages)
-                    {
-                        <li class="page-item disabled"><span class="page-link">Next ➡️</span></li>
-                        <li class="page-item disabled"><span class="page-link">Last ⏭️</span></li>
-                    }
-                    else
-                    {
-                        <li class="page-item"><a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.PageNumber + 1))">Next ➡️</a></li>
-                        <li class="page-item"><a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.TotalPages))">Last ⏭️</a></li>
-                    }
-                </ul>
+                <div class="d-flex justify-content-between align-items-center">
+                    <!-- Left side: Showing X-Y of total -->
+                    <div>
+                        @if (Model != null && Model.Employees != null && Model.Employees.Count > 0)
+                        {
+                            var start = ((Model.PageNumber - 1) * Model.PageSize) + 1;
+                            var end = start + Model.Employees.Count - 1;
+                            <span class="text-muted">Showing @start - @end of @Model.Total employees</span>
+                        }
+                    </div>
+
+                    <!-- Center: Page numbers with First / Last -->
+                    <ul class="pagination mb-0">
+                        @* First Page *@
+                        <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(1))">⏮️</a>
+                        </li>
+
+                        @* Previous Page *@
+                        <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.PageNumber - 1))">⬅️</a>
+                        </li>
+
+                        @* Page numbers in the middle (max 4) *@
+                        @{
+                            int maxPagesToShow = 4;
+                            int startPage = Math.Max(Model.PageNumber - 1, 1);
+                            int endPage = Math.Min(startPage + maxPagesToShow - 1, Model.TotalPages);
+                            if (endPage - startPage + 1 < maxPagesToShow)
+                            {
+                                startPage = Math.Max(endPage - maxPagesToShow + 1, 1);
+                            }
+                        }
+
+                        @for (int i = startPage; i <= endPage; i++)
+                        {
+                            if (i == Model.PageNumber)
+                            {
+                                <li class="page-item active"><span class="page-link">@i</span></li>
+                            }
+                            else
+                            {
+                                <li class="page-item"><a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(i))">@i</a></li>
+                            }
+                        }
+
+                        @* Next Page *@
+                        <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.PageNumber + 1))">➡️</a>
+                        </li>
+
+                        @* Last Page *@
+                        <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.TotalPages))">⏭️</a>
+                        </li>
+                    </ul>
+                </div>
             </nav>
+
+
+
+
+
         </div>
     </div>
 </div>
