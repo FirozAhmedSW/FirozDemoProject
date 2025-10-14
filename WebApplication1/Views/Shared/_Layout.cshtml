@@ -1,5 +1,5 @@
 ﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+    EmployeePortal layout with left sidebar, topbar, dropdown, and sticky footer
 *@
 @{
 }
@@ -14,45 +14,116 @@
     <link rel="stylesheet" href="~/EmployeePortal.styles.css" asp-append-version="true" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wrapper {
+            display: flex;
+            flex: 1 0 auto; /* allow flex-grow */
+        }
+
+        .sidebar {
+            min-width: 200px;
+            max-width: 220px;
+            background-color: #1e3a8a;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+            .sidebar .nav-link {
+                color: #fff;
+            }
+
+                .sidebar .nav-link.active {
+                    background-color: #3b5998;
+                }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px 20px;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            padding: 20px;
+        }
+
+        footer {
+            background-color: #1e3a8a;
+            color: #fff;
+            padding: 15px 0;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            object-fit: cover;
+            border: 2px solid #fff;
+            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        }
+
+        .dropdown-menu-end {
+            right: 0;
+            left: auto;
+        }
+    </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body>
     @{
         var user = Context.Session.GetString("UserName");
     }
+
     @if (!string.IsNullOrEmpty(user))
     {
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #1e3a8a;">
-            <div class="container-fluid">
-                <a class="navbar-brand d-flex align-items-center fw-bold fs-4" asp-area="" asp-controller="Home" asp-action="Index" style="letter-spacing: 0.05em;">
-                    EmployeePortal
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
-                        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarContent">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item">
-                            <a class="nav-link px-3 @((ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                               asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link px-3 @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "List") ? "active" : "")"
-                               asp-area="" asp-controller="Employee" asp-action="List">Employee List</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link px-3 @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "Create") ? "active" : "")"
-                               asp-area="" asp-controller="Employee" asp-action="Create">Add Employee</a>
-                        </li>
-                    </ul>
-                    <ul class="navbar-nav ms-auto align-items-center">
+        <div class="wrapper">
+            <!-- Sidebar -->
+            <nav class="sidebar d-flex flex-column p-3">
+                <h4 class="text-center mb-4 fw-bold">EmployeePortal</h4>
+                <ul class="nav nav-pills flex-column mb-auto">
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home") ? "active" : "")"
+                           asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "List") ? "active" : "")"
+                           asp-area="" asp-controller="Employee" asp-action="List">Employee List</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "Create") ? "active" : "")"
+                           asp-area="" asp-controller="Employee" asp-action="Create">Add Employee</a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Main content -->
+            <div class="main-content">
+                <!-- Topbar -->
+                <div class="topbar d-flex bg-info justify-content-between align-items-center">
+                    <h5 class="mb-0">@ViewData["Title"]</h5>
+                    <ul class="navbar-nav flex-row align-items-center m-0 p-0 list-unstyled">
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="user-select:none;">
-                                <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="User Avatar" class="rounded-circle me-2" style="width:36px; height:36px; object-fit:cover; border: 2px solid #fff; box-shadow: 0 0 6px rgba(0,0,0,0.3);" />
-                                <span class="d-none d-lg-inline text-white fw-semibold">Admin</span>
+                            <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="User Avatar" class="rounded-circle me-2 user-avatar" />
+                                <span class="fw-semibold d-none d-lg-inline">@user</span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown" style="min-width: 180px;">
+                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Profile">Profile</a></li>
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Settings">Settings</a></li>
                                 <li><hr class="dropdown-divider" /></li>
@@ -61,56 +132,24 @@
                         </li>
                     </ul>
                 </div>
-            </div>
-        </nav>
-    </header>
-        <div>
-            <main role="main" class="flex-grow-1 py-4">
-                @RenderBody()
-            </main>
-        </div>  
-    <footer class="bg-dark text-light pt-5 pb-4 mt-auto">
-        <div class="container">
-            <div class="row gy-4">
-                <div class="col-md-4">
-                    <h5 class="text-primary fw-bold mb-3">EmployeePortal</h5>
-                    <p>Manage your workforce with confidence and ease. EmployeePortal brings simplicity and power together.</p>
-                    <small>© 2025 EmployeePortal. All rights reserved.</small>
+
+                <!-- Page Content -->
+                <div class="content-wrapper">
+                    @RenderBody()
                 </div>
-                <div class="col-md-4">
-                    <h6 class="fw-semibold mb-3 text-white">Quick Links</h6>
-                    <ul class="list-unstyled">
-                        <li><a href="/" class="text-decoration-none text-light">Home</a></li>
-                        <li><a asp-area="" asp-controller="Employee" asp-action="List" class="text-decoration-none text-light">Employee List</a></li>
-                        <li><a asp-area="" asp-controller="Employee" asp-action="Create" class="text-decoration-none text-light">Add Employee</a></li>
-                        <li><a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none text-light">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h6 class="fw-semibold mb-3 text-white">Contact Us</h6>
-                    <address class="text-light">
-                        1234 Corporate Blvd<br />
-                        Cityname, State 56789<br />
-                        Phone: <a href="tel:+1234567890" class="text-decoration-none text-light">+1 (234) 567-890</a><br />
-                        Email: <a href="mailto:support@example.com" class="text-decoration-none text-light">support@employeeportal.com</a>
-                    </address>
-                    <div>
-                        <a href="https://x.com/RoutPranaya" class="me-3 text-light" title="Twitter" target="_blank"><i class="bi bi-twitter fs-4"></i></a>
-                        <a href="https://www.linkedin.com/in/pranaya-rout" class="me-3 text-light" title="LinkedIn" target="_blank"><i class="bi bi-linkedin fs-4"></i></a>
-                        <a href="https://www.facebook.com/tutorialsdotnet/" class="me-3 text-light" title="Facebook" target="_blank"><i class="bi bi-facebook fs-4"></i></a>
-                        <a href="https://t.me/dotnettutorials" class="me-3 text-light" title="Telegram" target="_blank"><i class="bi bi-telegram fs-4"></i></a>
-                        <a href="https://wa.me/917021801173" class="me-3 text-light" title="WhatsApp" target="_blank"><i class="bi bi-whatsapp fs-4"></i></a>
-                        <a href="https://www.youtube.com/%40DotNetTutorials" class="text-light" title="YouTube" target="_blank"><i class="bi bi-youtube fs-4"></i></a>
-                    </div>
-                </div>
+
+                <!-- Footer -->
+                <footer class="mt-auto">
+                    &copy; 2025 EmployeePortal. All rights reserved.
+                </footer>
             </div>
         </div>
-    </footer>
     }
     else
     {
-    @RenderBody()
+        @RenderBody()
     }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
