@@ -49,13 +49,8 @@
 </head>
 <body>
     @{
-        // Check if user is logged in via session
         var user = Context.Session.GetString("UserName");
-        // For static testing, uncomment next line
-        // var user = "Firoz";
     }
-
-    @* Show Dashboard layout only if user is logged in *@
     @if (!string.IsNullOrEmpty(user))
     {
         <div class="d-flex">
@@ -95,6 +90,8 @@
                     @RenderBody()
                 </div>
             </div>
+
+
         </div>
 
         <!-- Footer -->
@@ -104,7 +101,6 @@
     }
     else
     {
-        @* User not logged in, show only page body (login page) *@
         @RenderBody()
     }
 
