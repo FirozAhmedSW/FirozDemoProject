@@ -1,8 +1,26 @@
 ﻿@*
     EmployeePortal layout with left sidebar, topbar, dropdown, and sticky footer
 *@
+@using WebApplication1.Models
+@inject WebApplication1.DataContext.ApplicationDbContext _context
 @{
+    var userName = Context.Session.GetString("UserName");
+    string userPhoto = "/images/default-avatar.jpg"; // default fallback
+
+    if (!string.IsNullOrEmpty(userName))
+    {
+        var userId = Context.Session.GetInt32("UserId");
+        if (userId != null)
+        {
+            var currentUser = _context.Users.FirstOrDefault(u => u.Id == userId.Value && !u.IsDeleted);
+            if (currentUser != null && !string.IsNullOrEmpty(currentUser.PhotoPath))
+            {
+                userPhoto = currentUser.PhotoPath;
+            }
+        }
+    }
 }
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,7 +45,7 @@
 
         .wrapper {
             display: flex;
-            flex: 1 0 auto; /* allow flex-grow */
+            flex: 1 0 auto;
         }
 
         .sidebar {
@@ -86,11 +104,7 @@
     </style>
 </head>
 <body>
-    @{
-        var user = Context.Session.GetString("UserName");
-    }
-
-    @if (!string.IsNullOrEmpty(user))
+    @if (!string.IsNullOrEmpty(userName))
     {
         <div class="wrapper">
             <!-- Sidebar -->
@@ -128,8 +142,8 @@
                     <ul class="navbar-nav flex-row align-items-center m-0 p-0 list-unstyled">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="User Avatar" class="rounded-circle me-2 user-avatar" />
-                                <span class="fw-semibold d-none d-lg-inline">@user</span>
+                                <img src="@userPhoto" alt="User Avatar" class="rounded-circle me-2 user-avatar" />
+                                <span class="fw-semibold d-none d-lg-inline">@userName</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Profile">Profile</a></li>
