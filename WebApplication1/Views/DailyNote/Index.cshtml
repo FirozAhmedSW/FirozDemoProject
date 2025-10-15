@@ -1,0 +1,18 @@
+﻿@model IEnumerable<WebApplication1.Models.DailyNote>
+
+<h2>My Daily Notes</h2>
+<a asp-action="Create" class="btn btn-primary mb-3">Add New Note</a>
+
+<div class="row">
+    @foreach (var note in Model)
+    {
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <p class="card-text">@note.Note</p>
+                    <small class="text-muted">Created: @note.CreatedAt.ToString("dd MMM yyyy HH:mm")</small>
+                </div>
+            </div>
+        </div>
+    }
+</div>

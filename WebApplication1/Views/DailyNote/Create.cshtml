@@ -1,0 +1,13 @@
+﻿@model WebApplication1.Models.DailyNote
+
+<h2>Create Daily Note</h2>
+
+<form asp-action="Create" method="post">
+    <div class="form-group mb-2">
+        <label>Note</label>
+        <textarea asp-for="Note" class="form-control" rows="4"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-action="Index" class="btn btn-secondary ms-2">Back</a>
+</form>

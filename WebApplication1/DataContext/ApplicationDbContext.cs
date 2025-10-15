@@ -16,6 +16,10 @@ namespace WebApplication1.DataContext
         public DbSet<Department> Departments { get; set; }
         public DbSet<Designation> Designations { get; set; }
         public DbSet<EmployeeType> EmployeeTypes { get; set; }
+        public DbSet<User> Users { get; set; }
+
+        public DbSet<DailyNote> DailyNotes { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
