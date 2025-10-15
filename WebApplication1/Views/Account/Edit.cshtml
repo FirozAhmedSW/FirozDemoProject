@@ -1,7 +1,7 @@
 ﻿@model WebApplication1.Models.User
-
-<h2>Edit User</h2>
-
+@{
+    ViewData["Title"] = "Edit User";
+}
 <form asp-action="Edit" method="post">
     <input type="hidden" asp-for="Id" />
 

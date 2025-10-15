@@ -1,6 +1,7 @@
 ﻿@model WebApplication1.Models.User
-
-<h2>Add New User</h2>
+@{
+    ViewData["Title"] = "Add New User";
+}
 
 <form asp-action="Create" method="post">
     <div class="form-group mb-2">
