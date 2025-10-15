@@ -113,6 +113,10 @@
                         <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
                            asp-area="" asp-controller="Account" asp-action="Index">User Info</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "DailyNote" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
+                           asp-area="" asp-controller="DailyNote" asp-action="Index">Daily Notes</a>
+                    </li>
                 </ul>
             </nav>
 

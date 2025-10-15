@@ -14,25 +14,14 @@ namespace WebApplication1.Controllers
         // Sample Reports page
         public IActionResult Reports()
         {
-            var reports = new List<dynamic>
-            {
-                new { Id = 1, Name = "Fire Incident", Date = DateTime.Now.AddDays(-2), Status = "Open" },
-                new { Id = 2, Name = "Equipment Check", Date = DateTime.Now.AddDays(-1), Status = "Closed" },
-                new { Id = 3, Name = "Training", Date = DateTime.Now, Status = "Open" }
-            };
-
+            var reports = GetSampleReports();
             return View(reports);
         }
 
         // Generate PDF using iText7
         public IActionResult ReportsPdf()
         {
-            var reports = new List<dynamic>
-            {
-                new { Id = 1, Name = "Fire Incident", Date = DateTime.Now.AddDays(-2), Status = "Open" },
-                new { Id = 2, Name = "Equipment Check", Date = DateTime.Now.AddDays(-1), Status = "Closed" },
-                new { Id = 3, Name = "Training", Date = DateTime.Now, Status = "Open" }
-            };
+            var reports = GetSampleReports();
 
             using var ms = new MemoryStream();
             using (var writer = new PdfWriter(ms))
@@ -40,41 +29,52 @@ namespace WebApplication1.Controllers
                 using var pdf = new PdfDocument(writer);
                 var document = new Document(pdf);
 
-                // ✅ Bold font for header
+                // Bold font for headers
                 PdfFont boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
 
                 // Title
                 document.Add(new Paragraph("Reports")
                     .SetFont(boldFont)
                     .SetTextAlignment(TextAlignment.CENTER)
-                    .SetFontSize(18));
+                    .SetFontSize(18)
+                    .SetMarginBottom(10));
 
-                document.Add(new Paragraph("\n"));
+                // Table with 4 columns, full width
+                Table table = new Table(UnitValue.CreatePercentArray(new float[] { 1, 4, 3, 2 }))
+                    .UseAllAvailableWidth();
 
-                // Table: 4 columns
-                Table table = new Table(4, true);
-
-                // Header row bold
-                table.AddHeaderCell(new Cell().Add(new Paragraph("ID").SetFont(boldFont)));
-                table.AddHeaderCell(new Cell().Add(new Paragraph("Name").SetFont(boldFont)));
-                table.AddHeaderCell(new Cell().Add(new Paragraph("Date").SetFont(boldFont)));
-                table.AddHeaderCell(new Cell().Add(new Paragraph("Status").SetFont(boldFont)));
+                // Header row
+                table.AddHeaderCell(new Cell().Add(new Paragraph("ID").SetFont(boldFont).SetFontSize(12)));
+                table.AddHeaderCell(new Cell().Add(new Paragraph("Name").SetFont(boldFont).SetFontSize(12)));
+                table.AddHeaderCell(new Cell().Add(new Paragraph("Date").SetFont(boldFont).SetFontSize(12)));
+                table.AddHeaderCell(new Cell().Add(new Paragraph("Status").SetFont(boldFont).SetFontSize(12)));
 
                 // Data rows
                 foreach (var r in reports)
                 {
-                    table.AddCell(r.Id.ToString());
-                    table.AddCell(r.Name);
-                    table.AddCell(r.Date.ToString("yyyy-MM-dd"));
-                    table.AddCell(r.Status);
+                    table.AddCell(new Cell().Add(new Paragraph(r.Id.ToString())));
+                    table.AddCell(new Cell().Add(new Paragraph(r.Name)));
+                    table.AddCell(new Cell().Add(new Paragraph(r.Date.ToString("yyyy-MM-dd"))));
+                    table.AddCell(new Cell().Add(new Paragraph(r.Status)));
                 }
 
                 document.Add(table);
                 document.Close();
             }
 
-            // Return PDF as File
+            ms.Position = 0; // Reset stream position
             return File(ms.ToArray(), "application/pdf", "Reports.pdf");
+        }
+
+        // ✅ Sample data helper method
+        private List<dynamic> GetSampleReports()
+        {
+            return new List<dynamic>
+            {
+                new { Id = 1, Name = "Fire Incident", Date = DateTime.Now.AddDays(-2), Status = "Open" },
+                new { Id = 2, Name = "Equipment Check", Date = DateTime.Now.AddDays(-1), Status = "Closed" },
+                new { Id = 3, Name = "Training", Date = DateTime.Now, Status = "Open" }
+            };
         }
     }
 }

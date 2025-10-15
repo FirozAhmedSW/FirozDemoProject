@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "User Info";
 }
+
+<h3 class="mb-3 text-center text-primary">User List</h3>
+
 <div class="row align-items-center mb-3">
     <div class="col-md-6">
         <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" />
@@ -10,8 +13,6 @@
         <a href="@Url.Action("Create", "Account")" class="btn btn-primary">Add User</a>
     </div>
 </div>
-
-
 
 <div id="userTableContainer">
     @Html.Partial("_UserTable", Model)

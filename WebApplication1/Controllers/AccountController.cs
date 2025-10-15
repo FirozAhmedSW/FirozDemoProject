@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models;
 using System.Linq;
 using WebApplication1.DataContext;
+using System;
 
 namespace WebApplication1.Controllers
 {
@@ -26,13 +27,24 @@ namespace WebApplication1.Controllers
         [HttpPost]
         public IActionResult Login(string username, string password)
         {
-            var user = _context.Users.FirstOrDefault(u => u.UserName == username && u.Password == password);
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                ViewBag.Error = "Username and Password are required!";
+                return View();
+            }
+
+            var user = _context.Users
+                .Where(u => !u.IsDeleted)
+                .FirstOrDefault(u =>
+                    (u.UserName ?? "").Equals(username) &&
+                    (u.Password ?? "").Equals(password)
+                );
 
             if (user != null)
             {
-                HttpContext.Session.SetString("UserName", user.UserName);
+                HttpContext.Session.SetString("UserName", user.UserName ?? "");
                 HttpContext.Session.SetInt32("UserId", user.Id);
-                return RedirectToAction("Index"); // Redirect to Dashboard or User list
+                return RedirectToAction("Dashboard");
             }
 
             ViewBag.Error = "Invalid credentials!";
@@ -50,7 +62,7 @@ namespace WebApplication1.Controllers
         }
 
         // ========================
-        // CHECK SESSION (Dashboard)
+        // DASHBOARD
         // ========================
         public IActionResult Dashboard()
         {
@@ -65,7 +77,7 @@ namespace WebApplication1.Controllers
         }
 
         // ========================
-        // USER CRUD + SEARCH + PAGINATION
+        // USER LIST + SEARCH + PAGINATION
         // ========================
         public IActionResult Index(string searchText = "", int page = 1, int pageSize = 5)
         {
@@ -73,7 +85,9 @@ namespace WebApplication1.Controllers
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
                 return RedirectToAction("Login");
 
-            var query = _context.Users.AsQueryable();
+            var query = _context.Users
+                .Where(u => !u.IsDeleted) // ✅ show only active users
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchText))
             {
@@ -106,59 +120,125 @@ namespace WebApplication1.Controllers
             return View(pagedUsers);
         }
 
-        // --- CREATE ---
+        // ========================
+        // CREATE USER
+        // ========================
         public IActionResult Create() => View();
 
         [HttpPost]
-        public IActionResult Create(User user)
+        public IActionResult Create(User user, IFormFile? Photo)
         {
             if (ModelState.IsValid)
             {
+                if (Photo != null && Photo.Length > 0)
+                {
+                    // wwwroot/images ফোল্ডারে সেভ করব
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(Photo.FileName);
+                    var filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        Photo.CopyTo(stream);
+                    }
+
+                    user.PhotoPath = "/images/" + fileName;
+                }
+
                 _context.Users.Add(user);
                 _context.SaveChanges();
                 return RedirectToAction("Index");
             }
+
             return View(user);
         }
 
-        // --- EDIT ---
+
+        // ========================
+        // EDIT USER
+        // ========================
         public IActionResult Edit(int id)
         {
-            var user = _context.Users.Find(id);
+            var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
             if (user == null) return NotFound();
             return View(user);
         }
 
         [HttpPost]
-        public IActionResult Edit(User user)
+        public IActionResult Edit(User user, IFormFile? Photo)
         {
-            if (ModelState.IsValid)
+            var existingUser = _context.Users.Find(user.Id);
+            if (existingUser == null) return NotFound();
+
+            if (Photo != null && Photo.Length > 0)
             {
-                _context.Users.Update(user);
-                _context.SaveChanges();
-                return RedirectToAction("Index");
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(Photo.FileName);
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    Photo.CopyTo(stream);
+                }
+
+                existingUser.PhotoPath = "/images/" + fileName;
             }
-            return View(user);
-        }
 
-        // --- DELETE ---
-        public IActionResult Delete(int id)
-        {
-            var user = _context.Users.Find(id);
-            if (user == null) return NotFound();
+            // Update other fields
+            existingUser.UserName = user.UserName;
+            existingUser.Email = user.Email;
 
-            _context.Users.Remove(user);
+            // ✅ Update password only if not empty
+            if (!string.IsNullOrEmpty(user.Password))
+            {
+                existingUser.Password = user.Password;
+            }
+
+            existingUser.Address = user.Address;
+            existingUser.Contact = user.Contact;
+            existingUser.About = user.About;
+            existingUser.UpdatedAt = DateTime.Now;
+
+            _context.Users.Update(existingUser);
             _context.SaveChanges();
             return RedirectToAction("Index");
         }
 
 
+
+
+        // ========================
+        // SOFT DELETE USER
+        // ========================
+        public IActionResult Delete(int id)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
+            if (user == null) return NotFound();
+
+            user.IsDeleted = true;
+            user.UpdatedAt = DateTime.Now;
+            user.UpdatedBy = HttpContext.Session.GetString("UserName") ?? "System";
+
+            _context.Users.Update(user);
+            _context.SaveChanges();
+
+            return RedirectToAction("Index");
+        }
+
+        // ========================
+        // DETAILS
+        // ========================
         public IActionResult Details(int id)
         {
-            var user = _context.Users.Find(id);
+            var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
             if (user == null) return NotFound();
             return View(user);
         }
-
     }
 }
