@@ -1,47 +1,163 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Models;
+using System.Linq;
+using WebApplication1.DataContext;
 
-namespace WebApplication1.Controllers;
-
-public class AccountController : Controller
+namespace WebApplication1.Controllers
 {
-    // GET: Login Page
-    public IActionResult Login()
+    public class AccountController : Controller
     {
-        return View();
-    }
+        private readonly ApplicationDbContext _context;
 
-    // POST: Login
-    [HttpPost]
-    public IActionResult Login(string username, string password)
-    {
-        if (!string.IsNullOrEmpty(username) && password == "1234")
+        public AccountController(ApplicationDbContext context)
         {
-            // ✅ Set Session
-            HttpContext.Session.SetString("UserName", username);
-            return RedirectToAction("Dashboard");
+            _context = context;
         }
 
-        ViewBag.Error = "Invalid credentials!";
-        return View();
-    }
-
-    // GET: Dashboard
-    public IActionResult Dashboard()
-    {
-        var user = HttpContext.Session.GetString("UserName");
-        if (string.IsNullOrEmpty(user))
+        // ========================
+        // LOGIN
+        // ========================
+        public IActionResult Login()
         {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Login(string username, string password)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.UserName == username && u.Password == password);
+
+            if (user != null)
+            {
+                HttpContext.Session.SetString("UserName", user.UserName);
+                HttpContext.Session.SetInt32("UserId", user.Id);
+                return RedirectToAction("Index"); // Redirect to Dashboard or User list
+            }
+
+            ViewBag.Error = "Invalid credentials!";
+            return View();
+        }
+
+
+        // ========================
+        // LOGOUT
+        // ========================
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
             return RedirectToAction("Login");
         }
 
-        ViewBag.UserName = user;
-        return View();
-    }
+        // ========================
+        // CHECK SESSION (Dashboard)
+        // ========================
+        public IActionResult Dashboard()
+        {
+            var userName = HttpContext.Session.GetString("UserName");
+            if (string.IsNullOrEmpty(userName))
+            {
+                return RedirectToAction("Login");
+            }
 
-    // GET: Logout
-    public IActionResult Logout()
-    {
-        HttpContext.Session.Clear();
-        return RedirectToAction("Login");
+            ViewBag.UserName = userName;
+            return View();
+        }
+
+        // ========================
+        // USER CRUD + SEARCH + PAGINATION
+        // ========================
+        public IActionResult Index(string searchText = "", int page = 1, int pageSize = 5)
+        {
+            // Check session
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
+                return RedirectToAction("Login");
+
+            var query = _context.Users.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                query = query.Where(u =>
+                    u.UserName.Contains(searchText) ||
+                    u.Email.Contains(searchText) ||
+                    u.Address.Contains(searchText) ||
+                    u.Contact.Contains(searchText) ||
+                    u.About.Contains(searchText)
+                );
+            }
+
+            var totalUsers = query.Count();
+            var totalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
+            var pagedUsers = query
+                .OrderBy(u => u.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.SearchText = searchText;
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return PartialView("_UserTable", pagedUsers);
+            }
+
+            return View(pagedUsers);
+        }
+
+        // --- CREATE ---
+        public IActionResult Create() => View();
+
+        [HttpPost]
+        public IActionResult Create(User user)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Users.Add(user);
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            return View(user);
+        }
+
+        // --- EDIT ---
+        public IActionResult Edit(int id)
+        {
+            var user = _context.Users.Find(id);
+            if (user == null) return NotFound();
+            return View(user);
+        }
+
+        [HttpPost]
+        public IActionResult Edit(User user)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Users.Update(user);
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            return View(user);
+        }
+
+        // --- DELETE ---
+        public IActionResult Delete(int id)
+        {
+            var user = _context.Users.Find(id);
+            if (user == null) return NotFound();
+
+            _context.Users.Remove(user);
+            _context.SaveChanges();
+            return RedirectToAction("Index");
+        }
+
+        // --- DETAILS ---
+        public IActionResult Details(int id)
+        {
+            var user = _context.Users.Find(id);
+            if (user == null) return NotFound();
+            return View(user);
+        }
     }
 }

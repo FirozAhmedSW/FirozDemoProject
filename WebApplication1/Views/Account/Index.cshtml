@@ -1,0 +1,37 @@
+﻿@model IEnumerable<WebApplication1.Models.User>
+
+<h2>User List</h2>
+
+<div class="mb-3">
+    <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" />
+</div>
+
+<div id="userTableContainer">
+    @Html.Partial("_UserTable", Model)
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let typingTimer;
+        const delay = 400; // typing delay in ms
+
+        $("#searchBox").on("keyup", function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(loadUsers, delay);
+        });
+
+        function loadUsers(page = 1) {
+            const searchText = $("#searchBox").val();
+            $.get("@Url.Action("Index", "Account")", { searchText: searchText, page: page }, function (data) {
+                $("#userTableContainer").html(data);
+            });
+        }
+
+        $(document).on("click", ".page-link", function (e) {
+            e.preventDefault();
+            const page = $(this).data("page");
+            loadUsers(page);
+        });
+    </script>
+}

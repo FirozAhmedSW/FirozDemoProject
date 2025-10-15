@@ -109,6 +109,10 @@
                         <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "Create") ? "active" : "")"
                            asp-area="" asp-controller="Employee" asp-action="Create">Add Employee</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
+                           asp-area="" asp-controller="Account" asp-action="Index">User Info</a>
+                    </li>
                 </ul>
             </nav>
 

@@ -1,0 +1,39 @@
+﻿@model WebApplication1.Models.User
+
+<h2>Edit User</h2>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-group">
+        <label>User Name</label>
+        <input asp-for="UserName" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Email</label>
+        <input asp-for="Email" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Password</label>
+        <input asp-for="Password" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Address</label>
+        <input asp-for="Address" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Contact</label>
+        <input asp-for="Contact" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>About</label>
+        <textarea asp-for="About" class="form-control"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Update</button>
+</form>
