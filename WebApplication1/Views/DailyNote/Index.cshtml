@@ -1,18 +1,46 @@
 ﻿@model IEnumerable<WebApplication1.Models.DailyNote>
 
-<h2>My Daily Notes</h2>
-<a asp-action="Create" class="btn btn-primary mb-3">Add New Note</a>
+@{
+    ViewData["Title"] = "My Daily Notes";
+}
 
-<div class="row">
-    @foreach (var note in Model)
-    {
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <p class="card-text">@note.Note</p>
-                    <small class="text-muted">Created: @note.CreatedAt.ToString("dd MMM yyyy HH:mm")</small>
-                </div>
-            </div>
-        </div>
-    }
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search notes..." />
+    </div>
+    <div class="col-md-6 text-end">
+        <a asp-action="Create" class="btn btn-primary">Add New Note</a>
+    </div>
 </div>
+
+<div id="notesContainer" class="row">
+    @Html.Partial("_DailyNotesTable", Model)
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let typingTimer;
+        const delay = 400; // ms
+
+        $("#searchBox").on("keyup", function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(loadNotes, delay);
+        });
+
+        function loadNotes(page = 1) {
+            const searchText = $("#searchBox").val();
+            $.get("@Url.Action("Index", "DailyNote")", { searchText: searchText, page: page }, function (data) {
+                $("#notesContainer").html(data);
+            });
+        }
+
+        $(document).on("click", ".page-link", function (e) {
+            e.preventDefault();
+            const page = $(this).data("page");
+            loadNotes(page);
+        });
+    </script>
+}
