@@ -75,20 +75,19 @@ namespace WebApplication1.Controllers
             if (userId == null)
                 return RedirectToAction("Login", "Account");
 
-            if (ModelState.IsValid)
-            {
-                note.UserId = userId.Value;
-                note.CreatedAt = DateTime.Now;
-                note.IsDeleted = false;
+            // Prevent NULL value in DB
+            note.Note = note.Note ?? string.Empty;
 
-                _context.DailyNotes.Add(note);
-                _context.SaveChanges();
+            note.UserId = userId.Value;
+            note.CreatedAt = DateTime.Now;
+            note.IsDeleted = false;
 
-                return RedirectToAction("Index");
-            }
+            _context.DailyNotes.Add(note);
+            _context.SaveChanges();
 
-            return View(note);
+            return RedirectToAction("Index");
         }
+
 
         // ========================
         // EDIT - GET
