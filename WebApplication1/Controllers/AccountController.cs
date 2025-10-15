@@ -152,12 +152,13 @@ namespace WebApplication1.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- DETAILS ---
+
         public IActionResult Details(int id)
         {
             var user = _context.Users.Find(id);
             if (user == null) return NotFound();
             return View(user);
         }
+
     }
 }

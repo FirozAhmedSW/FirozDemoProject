@@ -1,6 +1,13 @@
 ﻿@model IEnumerable<WebApplication1.Models.User>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h2>User List</h2>
+    </div>
+    <div class="col text-end">
+        <a href="@Url.Action("Create", "Account")" class="btn btn-primary">Add User</a>
+    </div>
+</div>
 
-<h2>User List</h2>
 
 <div class="mb-3">
     <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" />
