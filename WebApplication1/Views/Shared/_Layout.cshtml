@@ -50,19 +50,19 @@
 
         .sidebar {
             min-width: 200px;
-            max-width: 220px;
-            background-color: #1e3a8a;
+            max-width: 239px;
+            background-color:#040403;
             color: #fff;
             min-height: 100vh;
         }
 
-            .sidebar .nav-link {
-                color: #fff;
-            }
+        .sidebar .nav-link {
+            color: #fff;
+        }
 
-                .sidebar .nav-link.active {
-                    background-color: #3b5998;
-                }
+        .sidebar .nav-link.active {
+            background-color: #3b5998;
+        }
 
         .main-content {
             flex: 1;
@@ -73,7 +73,7 @@
         .topbar {
             background-color: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
-            padding: 10px 20px;
+            padding: 0px 20px;
         }
 
         .content-wrapper {
@@ -82,8 +82,8 @@
         }
 
         footer {
-            background-color: #1e3a8a;
-            color: #fff;
+            background-color: #0dcaf0;
+            color: black;
             padding: 15px 0;
             text-align: center;
             flex-shrink: 0;
@@ -109,7 +109,8 @@
         <div class="wrapper">
             <!-- Sidebar -->
             <nav class="sidebar d-flex flex-column p-3">
-                <h4 class="text-center mb-4 fw-bold">EmployeePortal</h4>
+                <h4 class="text-center mb-4 fw-bold">Task Management</h4>
+
                 <ul class="nav nav-pills flex-column mb-auto">
                     <li class="nav-item">
                         <a class="nav-link @((ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home") ? "active" : "")"

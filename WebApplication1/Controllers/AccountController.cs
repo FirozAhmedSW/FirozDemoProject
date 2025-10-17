@@ -79,7 +79,7 @@ namespace TaskManagementSystem.Controllers
         // ========================
         // USER LIST + SEARCH + PAGINATION
         // ========================
-        public IActionResult Index(string searchText = "", int page = 1, int pageSize = 5)
+        public IActionResult Index(string searchText = "", int page = 1, int pageSize = 9)
         {
             // Check session
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
