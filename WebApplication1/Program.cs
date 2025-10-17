@@ -13,17 +13,17 @@ namespace EmployeePortal
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 1️⃣ Add services to the container.
+            // 1️⃣ Add MVC controllers with views
             builder.Services.AddControllersWithViews();
 
-            // 2️⃣ Add ApplicationDbContext and configure SQL Server connection string
+            // 2️⃣ Configure SQL Server connection
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("ECommerceDBConnection")));
 
-            // 3️⃣ Register EmployeeService for Dependency Injection
+            // 3️⃣ Register custom services
             builder.Services.AddScoped<EmployeeService>();
 
-            // 4️⃣ Add Session service
+            // 4️⃣ Configure Session
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -33,25 +33,33 @@ namespace EmployeePortal
 
             var app = builder.Build();
 
-            // 5️⃣ Configure the HTTP request pipeline
-            if (!app.Environment.IsDevelopment())
+            // 5️⃣ Configure HTTP pipeline
+            if (app.Environment.IsDevelopment())
             {
+                // Show detailed errors during development
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                // Use standard error handler in production
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+
             app.UseRouting();
 
-            // ✅ Enable session middleware
+            // ✅ Enable session
             app.UseSession();
 
+            // ⚠️ Authorization (optional if login implemented manually)
             app.UseAuthorization();
 
-            // 6️⃣ Rotativa PDF setup (points to wwwroot)
-            var rotativaPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            //RotativaConfiguration.Setup(rotativaPath);
+            // 6️⃣ Rotativa configuration (PDF generator)
+            var rotativaRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Rotativa");
+           // RotativaConfiguration.Setup(rotativaRoot);
 
             // 7️⃣ Default route
             app.MapControllerRoute(
