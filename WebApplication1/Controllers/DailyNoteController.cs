@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WebApplication1.DataContext;
-using WebApplication1.Models;
+using TaskManagementSystem.DataContext;
+using TaskManagementSystem.Models;
 using System.Linq;
 
-namespace WebApplication1.Controllers
+namespace TaskManagementSystem.Controllers
 {
     public class DailyNoteController : Controller
     {

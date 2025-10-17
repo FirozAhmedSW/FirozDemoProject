@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using WebApplication1.Common;
+using TaskManagementSystem.Common;
 
-namespace WebApplication1.Models
+namespace TaskManagementSystem.Models
 {
     public class DailyNote : Base
     {

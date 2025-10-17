@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using WebApplication1.Models;
+using TaskManagementSystem.Models;
 
-namespace WebApplication1.DataContext
+namespace TaskManagementSystem.DataContext
 {
     public class ApplicationDbContext : DbContext
     {

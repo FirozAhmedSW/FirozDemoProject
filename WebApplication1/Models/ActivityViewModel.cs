@@ -1,4 +1,4 @@
-﻿namespace WebApplication1.Models
+﻿namespace TaskManagementSystem.Models
 {
     public class ActivityViewModel
     {

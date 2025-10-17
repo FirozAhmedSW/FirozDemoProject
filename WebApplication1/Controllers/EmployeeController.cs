@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WebApplication1.Models;
-using WebApplication1.Services;
+using TaskManagementSystem.Models;
+using TaskManagementSystem.Services;
 
-namespace WebApplication1.Controllers
+namespace TaskManagementSystem.Controllers
 {
     public class EmployeeController : Controller
     {

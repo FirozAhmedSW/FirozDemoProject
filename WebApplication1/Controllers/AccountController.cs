@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WebApplication1.Models;
+using TaskManagementSystem.Models;
 using System.Linq;
-using WebApplication1.DataContext;
+using TaskManagementSystem.DataContext;
 using System;
 
-namespace WebApplication1.Controllers
+namespace TaskManagementSystem.Controllers
 {
     public class AccountController : Controller
     {

@@ -1,8 +1,8 @@
 ﻿    using Microsoft.EntityFrameworkCore;
-using WebApplication1.DataContext;
-using WebApplication1.Models;
+using TaskManagementSystem.DataContext;
+using TaskManagementSystem.Models;
 
-namespace WebApplication1.Services
+namespace TaskManagementSystem.Services
 {
     public class EmployeeService
     {

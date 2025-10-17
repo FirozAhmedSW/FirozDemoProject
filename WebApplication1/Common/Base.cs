@@ -1,4 +1,4 @@
-﻿namespace WebApplication1.Common
+﻿namespace TaskManagementSystem.Common
 {
     public abstract class Base
     {

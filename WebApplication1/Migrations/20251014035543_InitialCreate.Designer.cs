@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using WebApplication1.DataContext;
+using TaskManagementSystem.DataContext;
 
 #nullable disable
 
-namespace WebApplication1.Migrations
+namespace TaskManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20251014035543_InitialCreate")]
@@ -25,7 +25,7 @@ namespace WebApplication1.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("WebApplication1.Models.Department", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.Department", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -71,7 +71,7 @@ namespace WebApplication1.Migrations
                         });
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Designation", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.Designation", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -182,7 +182,7 @@ namespace WebApplication1.Migrations
                         });
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Employee", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.Employee", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -430,7 +430,7 @@ namespace WebApplication1.Migrations
                         });
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.EmployeeType", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.EmployeeType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -476,9 +476,9 @@ namespace WebApplication1.Migrations
                         });
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Designation", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.Designation", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Department", "Department")
+                    b.HasOne("TaskManagementSystem.Models.Department", "Department")
                         .WithMany("Designations")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -487,21 +487,21 @@ namespace WebApplication1.Migrations
                     b.Navigation("Department");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Employee", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.Employee", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Department", "Department")
+                    b.HasOne("TaskManagementSystem.Models.Department", "Department")
                         .WithMany("Employees")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.Designation", "Designation")
+                    b.HasOne("TaskManagementSystem.Models.Designation", "Designation")
                         .WithMany()
                         .HasForeignKey("DesignationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.EmployeeType", "EmployeeType")
+                    b.HasOne("TaskManagementSystem.Models.EmployeeType", "EmployeeType")
                         .WithMany("Employees")
                         .HasForeignKey("EmployeeTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -514,14 +514,14 @@ namespace WebApplication1.Migrations
                     b.Navigation("EmployeeType");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Department", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.Department", b =>
                 {
                     b.Navigation("Designations");
 
                     b.Navigation("Employees");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.EmployeeType", b =>
+            modelBuilder.Entity("TaskManagementSystem.Models.EmployeeType", b =>
                 {
                     b.Navigation("Employees");
                 });

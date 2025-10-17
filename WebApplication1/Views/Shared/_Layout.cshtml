@@ -1,8 +1,8 @@
 ﻿@*
     EmployeePortal layout with left sidebar, topbar, dropdown, and sticky footer
 *@
-@using WebApplication1.Models
-@inject WebApplication1.DataContext.ApplicationDbContext _context
+@using TaskManagementSystem.Models
+@inject TaskManagementSystem.DataContext.ApplicationDbContext _context
 @{
     var userName = Context.Session.GetString("UserName");
     string userPhoto = "/images/default-avatar.jpg"; // default fallback

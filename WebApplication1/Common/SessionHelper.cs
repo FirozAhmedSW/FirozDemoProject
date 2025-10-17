@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
-namespace WebApplication1.Common
+namespace TaskManagementSystem.Common
 {
     public static class SessionHelper
     {
