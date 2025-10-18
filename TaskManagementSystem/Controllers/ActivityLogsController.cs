@@ -131,7 +131,7 @@ namespace TaskManagementSystem.Controllers
                 headerTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
             }
 
-            var deptCell = new PdfPCell(new Phrase("Department of Fire Service & Civil Defence", headerFont))
+            var deptCell = new PdfPCell(new Phrase("Task Management System Activity Log Report", headerFont))
             {
                 Border = Rectangle.NO_BORDER,
                 HorizontalAlignment = Element.ALIGN_CENTER,
