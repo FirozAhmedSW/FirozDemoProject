@@ -7,7 +7,7 @@
 <h2 class="mb-4">@ViewData["Title"]</h2>
 
 <!-- 🔍 Filter Form -->
-<form method="get" class="row mb-4 g-2">
+<form method="get" class="row g-3 mb-4">
     <div class="col-md-3">
         <input type="text"
                name="user"
@@ -39,29 +39,39 @@
     </div>
 </form>
 
+<!-- 📄 PDF Download Button -->
+<div class="mb-3">
+    <a href="@Url.Action("Report", new { user = ViewData["CurrentUser"], from = ViewData["From"], to = ViewData["To"] })"
+       class="btn btn-success">
+        <i class="bi bi-file-earmark-pdf"></i> Download PDF Report
+    </a>
+</div>
+
 <!-- 📋 Logs Table -->
-<table class="table table-bordered table-striped align-middle">
+<table class="table table-bordered table-striped align-middle table-hover">
     <thead class="table-dark">
         <tr>
-            <th style="width:15%">User</th>
-            <th style="width:10%">Action</th>
-            <th style="width:40%">Description</th>
-            <th style="width:15%">IP Address</th>
-            <th style="width:20%">Date</th>
+            <th style="width:5%">SL</th>
+            <th style="width:20%">User</th>
+            <th style="width:25%">Action</th>
+            <th style="width:20%">IP Address</th>
+            <th style="width:30%">Date</th>
         </tr>
     </thead>
     <tbody>
         @if (Model.Any())
         {
+            int sl = ((int)ViewData["CurrentPage"]! - 1) * 10 + 1;
             foreach (var log in Model)
             {
                 <tr>
+                    <td>@sl</td>
                     <td>@log.UserName</td>
                     <td>@log.ActionType</td>
-                    <td>@log.Description</td>
-                    <td>@log.IPAddress</td>
+                    <td>@log.IpAddress</td>
                     <td>@log.CreatedAt.ToString("dd-MMM-yyyy hh:mm tt")</td>
                 </tr>
+                sl++;
             }
         }
         else
@@ -113,4 +123,12 @@
             </li>
         </ul>
     </nav>
+}
+
+<!-- ⚠️ TempData Error Message -->
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-warning mt-3">
+        @TempData["Error"]
+    </div>
 }

@@ -16,14 +16,14 @@ namespace TaskManagementSystem.Services
 
         public async Task LogAsync(string user, string actionType, string description)
         {
-           var ip = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+            var ip = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
             var log = new ActivityLog
             {
                 UserName = user,
                 ActionType = actionType,
                 Description = description,
-                IPAddress = ip,
+                IpAddress = ip,
                 CreatedAt = DateTime.Now
             };
 

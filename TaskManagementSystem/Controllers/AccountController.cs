@@ -65,8 +65,8 @@ namespace TaskManagementSystem.Controllers
         // ========================
         public async Task<IActionResult> Logout()
         {
-            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-            await _logger.LogAsync(userName, "Logout", $"User '{userName}' logged out.");
+            //var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+            //await _logger.LogAsync(userName, "Logout", $"User '{userName}' logged out.");
 
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
