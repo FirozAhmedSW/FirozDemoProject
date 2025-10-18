@@ -1,0 +1,116 @@
+﻿@model IEnumerable<TaskManagementSystem.Models.ActivityLog>
+
+@{
+    ViewData["Title"] = "Activity Logs";
+}
+
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+<!-- 🔍 Filter Form -->
+<form method="get" class="row mb-4 g-2">
+    <div class="col-md-3">
+        <input type="text"
+               name="user"
+               value="@ViewData["CurrentUser"]"
+               class="form-control"
+               placeholder="Search by User Name" />
+    </div>
+    <div class="col-md-3">
+        <input type="date"
+               name="from"
+               value="@ViewData["From"]"
+               class="form-control"
+               placeholder="From Date" />
+    </div>
+    <div class="col-md-3">
+        <input type="date"
+               name="to"
+               value="@ViewData["To"]"
+               class="form-control"
+               placeholder="To Date" />
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-50">
+            <i class="bi bi-search"></i> Search
+        </button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary w-50">
+            <i class="bi bi-x-circle"></i> Reset
+        </a>
+    </div>
+</form>
+
+<!-- 📋 Logs Table -->
+<table class="table table-bordered table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th style="width:15%">User</th>
+            <th style="width:10%">Action</th>
+            <th style="width:40%">Description</th>
+            <th style="width:15%">IP Address</th>
+            <th style="width:20%">Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Any())
+        {
+            foreach (var log in Model)
+            {
+                <tr>
+                    <td>@log.UserName</td>
+                    <td>@log.ActionType</td>
+                    <td>@log.Description</td>
+                    <td>@log.IPAddress</td>
+                    <td>@log.CreatedAt.ToString("dd-MMM-yyyy hh:mm tt")</td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="5" class="text-center text-danger py-3">
+                    No logs found!
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- 📄 Pagination -->
+@if ((int)ViewData["TotalPages"]! > 1)
+{
+    <nav>
+        <ul class="pagination justify-content-center">
+            @{
+                int currentPage = (int)ViewData["CurrentPage"]!;
+                int totalPages = (int)ViewData["TotalPages"]!;
+                string? currentUser = ViewData["CurrentUser"]?.ToString();
+                string? from = ViewData["From"]?.ToString();
+                string? to = ViewData["To"]?.ToString();
+            }
+
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <a class="page-link"
+                   href="@Url.Action("Index", new { page = currentPage - 1, user = currentUser, from, to })">
+                    Previous
+                </a>
+            </li>
+
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a class="page-link"
+                       href="@Url.Action("Index", new { page = i, user = currentUser, from, to })">
+                        @i
+                    </a>
+                </li>
+            }
+
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <a class="page-link"
+                   href="@Url.Action("Index", new { page = currentPage + 1, user = currentUser, from, to })">
+                    Next
+                </a>
+            </li>
+        </ul>
+    </nav>
+}

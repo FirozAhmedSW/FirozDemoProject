@@ -22,6 +22,9 @@ namespace EmployeePortal
 
             // 3️⃣ Register custom services
             builder.Services.AddScoped<EmployeeService>();
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ActivityLogger>();
+
 
             // 4️⃣ Configure Session
             builder.Services.AddSession(options =>

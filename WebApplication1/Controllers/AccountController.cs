@@ -4,16 +4,19 @@ using TaskManagementSystem.Models;
 using System.Linq;
 using TaskManagementSystem.DataContext;
 using System;
+using TaskManagementSystem.Services;
+using Microsoft.Extensions.Logging;
 
 namespace TaskManagementSystem.Controllers
 {
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
-
-        public AccountController(ApplicationDbContext context)
+        private readonly ActivityLogger _logger;
+        public AccountController(ApplicationDbContext context, ActivityLogger logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // ========================
@@ -25,7 +28,7 @@ namespace TaskManagementSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(string username, string password)
+        public async Task<IActionResult> Login(string username, string password)
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
@@ -44,6 +47,10 @@ namespace TaskManagementSystem.Controllers
             {
                 HttpContext.Session.SetString("UserName", user.UserName ?? "");
                 HttpContext.Session.SetInt32("UserId", user.Id);
+
+                // ✅ Activity Log
+                await _logger.LogAsync(user.UserName, "Login", $"User '{user.UserName}' logged in.");
+
                 return RedirectToAction("Dashboard");
             }
 
@@ -52,14 +59,19 @@ namespace TaskManagementSystem.Controllers
         }
 
 
+
         // ========================
         // LOGOUT
         // ========================
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+            await _logger.LogAsync(userName, "Logout", $"User '{userName}' logged out.");
+
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
         }
+
 
         // ========================
         // DASHBOARD
@@ -126,13 +138,12 @@ namespace TaskManagementSystem.Controllers
         public IActionResult Create() => View();
 
         [HttpPost]
-        public IActionResult Create(User user, IFormFile? Photo)
+        public async Task<IActionResult> Create(User user, IFormFile? Photo)
         {
             if (ModelState.IsValid)
             {
                 if (Photo != null && Photo.Length > 0)
                 {
-                    // wwwroot/images ফোল্ডারে সেভ করব
                     var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
                     if (!Directory.Exists(uploadsFolder))
                         Directory.CreateDirectory(uploadsFolder);
@@ -150,11 +161,16 @@ namespace TaskManagementSystem.Controllers
 
                 _context.Users.Add(user);
                 _context.SaveChanges();
+
+                // ✅ Activity Log
+                await _logger.LogAsync(user.UserName, "Create", $"User '{user.UserName}' created.");
+
                 return RedirectToAction("Index");
             }
 
             return View(user);
         }
+
 
 
         // ========================
@@ -166,9 +182,8 @@ namespace TaskManagementSystem.Controllers
             if (user == null) return NotFound();
             return View(user);
         }
-
         [HttpPost]
-        public IActionResult Edit(User user, IFormFile? Photo)
+        public async Task<IActionResult> Edit(User user, IFormFile? Photo)
         {
             var existingUser = _context.Users.Find(user.Id);
             if (existingUser == null) return NotFound();
@@ -190,15 +205,10 @@ namespace TaskManagementSystem.Controllers
                 existingUser.PhotoPath = "/images/" + fileName;
             }
 
-            // Update other fields
             existingUser.UserName = user.UserName;
             existingUser.Email = user.Email;
-
-            // ✅ Update password only if not empty
             if (!string.IsNullOrEmpty(user.Password))
-            {
                 existingUser.Password = user.Password;
-            }
 
             existingUser.Address = user.Address;
             existingUser.Contact = user.Contact;
@@ -207,6 +217,10 @@ namespace TaskManagementSystem.Controllers
 
             _context.Users.Update(existingUser);
             _context.SaveChanges();
+
+            // ✅ Activity Log
+            await _logger.LogAsync(existingUser.UserName, "Edit", $"User '{existingUser.UserName}' updated.");
+
             return RedirectToAction("Index");
         }
 
@@ -216,7 +230,7 @@ namespace TaskManagementSystem.Controllers
         // ========================
         // SOFT DELETE USER
         // ========================
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
             if (user == null) return NotFound();
@@ -228,8 +242,11 @@ namespace TaskManagementSystem.Controllers
             _context.Users.Update(user);
             _context.SaveChanges();
 
+            await _logger.LogAsync(user.UserName, "Delete", $"User '{user.UserName}' deleted.");
+
             return RedirectToAction("Index");
         }
+
 
         // ========================
         // DETAILS
