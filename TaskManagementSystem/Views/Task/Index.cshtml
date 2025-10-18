@@ -5,10 +5,17 @@
     var searchText = ViewData["Search"] as string ?? "";
 }
 
-<div class="d-flex justify-content-between mb-3">
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="bi bi-plus"></i> New Task
-    </a>
+<div class="d-flex justify-content-between mb-3 align-items-center">
+    <div>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus"></i> New Task
+        </a>
+
+        <a asp-action="TaskReport" class="btn btn-success ms-2"
+           asp-route-search="@searchText">
+            <i class="bi bi-download"></i> Download PDF Report
+        </a>
+    </div>
 
     <!-- Search Bar -->
     <input type="text" id="searchInput" class="form-control w-50" placeholder="Search tasks..."
@@ -51,16 +58,13 @@
 
 @section Scripts {
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-
     <script>
         $(document).ready(function () {
             // Trigger search on typing
             $('#searchInput').on('keyup', function () {
                 var value = $(this).val().toLowerCase();
                 $('#tasksTable tbody tr').filter(function () {
-                    $(this).toggle(
-                        $(this).text().toLowerCase().indexOf(value) > -1
-                    );
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
                 });
             });
         });
