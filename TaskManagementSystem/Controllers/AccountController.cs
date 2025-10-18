@@ -6,6 +6,9 @@ using TaskManagementSystem.DataContext;
 using System;
 using TaskManagementSystem.Services;
 using Microsoft.Extensions.Logging;
+using iTextSharp.text.pdf;
+using iTextSharp.text;
+using Microsoft.Extensions.Hosting;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -13,10 +16,13 @@ namespace TaskManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ActivityLogger _logger;
-        public AccountController(ApplicationDbContext context, ActivityLogger logger)
+
+        private readonly IWebHostEnvironment _environment;
+        public AccountController(ApplicationDbContext context, ActivityLogger logger, IWebHostEnvironment environment)
         {
             _context = context;
             _logger = logger;
+            _environment = environment;
         }
 
         // ========================
@@ -257,5 +263,149 @@ namespace TaskManagementSystem.Controllers
             if (user == null) return NotFound();
             return View(user);
         }
+
+
+        [HttpGet]
+        public async Task<IActionResult> UserReport(string? search)
+        {
+            var query = _context.Users
+                .Where(u => !u.IsDeleted);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(u =>
+                    (u.UserName ?? "").Contains(search) ||
+                    (u.Email ?? "").Contains(search) ||
+                    (u.Address ?? "").Contains(search) ||
+                    (u.Contact ?? "").Contains(search) ||
+                    (u.About ?? "").Contains(search)
+                );
+            }
+
+            var users = await query.OrderBy(u => u.Id).ToListAsync();
+
+            if (!users.Any())
+            {
+                TempData["Error"] = "No user data found for report.";
+                return RedirectToAction(nameof(Dashboard));
+            }
+
+            using var ms = new MemoryStream();
+            var doc = new Document(PageSize.A4, 20f, 20f, 40f, 40f);
+
+            // Font
+            var fontPath = Path.Combine(_environment.WebRootPath, "fonts", "arial.ttf");
+            if (!System.IO.File.Exists(fontPath))
+                fontPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
+
+            var baseFont = BaseFont.CreateFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            var normalFont = new Font(baseFont, 10);
+            var boldFont = new Font(baseFont, 12, Font.BOLD);
+            var headerFont = new Font(baseFont, 18, Font.BOLD);
+
+            var writer = PdfWriter.GetInstance(doc, ms);
+
+            // ✅ Footer with page number and creator
+            writer.PageEvent = new PdfPageEvents(baseFont);
+
+            doc.Open();
+
+            // Header
+            var logoPath = Path.Combine(_environment.WebRootPath, "images", "fire_logo.png");
+            var headerTable = new PdfPTable(2) { WidthPercentage = 100, SpacingAfter = 10f };
+            headerTable.SetWidths(new float[] { 15f, 85f });
+
+            if (System.IO.File.Exists(logoPath))
+            {
+                var logo = iTextSharp.text.Image.GetInstance(logoPath);
+                logo.ScaleAbsolute(50f, 50f);
+                headerTable.AddCell(new PdfPCell(logo) { Border = Rectangle.NO_BORDER, HorizontalAlignment = Element.ALIGN_RIGHT });
+            }
+            else
+            {
+                headerTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+            }
+
+            headerTable.AddCell(new PdfPCell(new Phrase("Department of Fire Service & Civil Defence", headerFont))
+            {
+                Border = Rectangle.NO_BORDER,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE
+            });
+
+            doc.Add(headerTable);
+
+            // Subtitle
+            var subTitle = new Paragraph($"User Report (Total: {users.Count})", normalFont)
+            {
+                Alignment = Element.ALIGN_CENTER,
+                SpacingAfter = 15f
+            };
+            doc.Add(subTitle);
+
+            // Table
+            var table = new PdfPTable(6) { WidthPercentage = 100f };
+            table.SetWidths(new float[] { 5f, 20f, 25f, 15f, 15f, 20f });
+            string[] headers = { "SL", "User Name", "Email", "Contact", "Address", "About" };
+
+            foreach (var h in headers)
+            {
+                table.AddCell(new PdfPCell(new Phrase(h, boldFont))
+                {
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    BackgroundColor = BaseColor.LightGray,
+                    Padding = 5f
+                });
+            }
+
+            int sl = 1;
+            foreach (var user in users)
+            {
+                table.AddCell(new PdfPCell(new Phrase(sl.ToString(), normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(user.UserName ?? "", normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(user.Email ?? "", normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(user.Contact ?? "", normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(user.Address ?? "", normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(user.About ?? "", normalFont)) { Padding = 5f });
+                sl++;
+            }
+
+            doc.Add(table);
+            doc.Close();
+
+            return File(ms.ToArray(), "application/pdf", "UserReport.pdf");
+        }
+
+        // ✅ Page Event Handler for Footer
+        public class PdfPageEvents : PdfPageEventHelper
+        {
+            private BaseFont _baseFont;
+            public PdfPageEvents(BaseFont baseFont)
+            {
+                _baseFont = baseFont;
+            }
+
+            public override void OnEndPage(PdfWriter writer, Document document)
+            {
+                PdfPTable footerTable = new PdfPTable(2) { TotalWidth = document.PageSize.Width - document.LeftMargin - document.RightMargin };
+                footerTable.SetWidths(new float[] { 50f, 50f });
+
+                footerTable.AddCell(new PdfPCell(new Phrase("Report created by Md Firoz", new Font(_baseFont, 9)))
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_LEFT
+                });
+
+                footerTable.AddCell(new PdfPCell(new Phrase($"Page {writer.PageNumber}", new Font(_baseFont, 9)))
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_RIGHT
+                });
+
+                footerTable.WriteSelectedRows(0, -1, document.LeftMargin, document.BottomMargin - 5, writer.DirectContent);
+            }
+        }
+
+
     }
 }

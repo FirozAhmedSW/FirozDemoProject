@@ -4,11 +4,12 @@
 }
 
 <div class="row align-items-center mb-3">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" />
     </div>
-    <div class="col-md-6 text-end">
+    <div class="col-md-8 text-end">
         <a href="@Url.Action("Create", "Account")" class="btn btn-primary">Add User</a>
+        <a href="@Url.Action("UserReport", "Account")" class="btn btn-success ms-2">Generate Report</a> <!-- ✅ Report button -->
     </div>
 </div>
 
