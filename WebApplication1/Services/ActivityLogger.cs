@@ -16,9 +16,7 @@ namespace TaskManagementSystem.Services
 
         public async Task LogAsync(string user, string actionType, string description)
         {
-            //var user = _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Anonymous";
-
-            var ip = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+           var ip = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
             var log = new ActivityLog
             {
