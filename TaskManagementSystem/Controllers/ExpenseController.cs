@@ -24,7 +24,7 @@ namespace TaskManagementSystem.Controllers
         [HttpGet]
         public IActionResult Index(string? month, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
         {
-            var expenses = _context.Expenses.AsQueryable();
+            var expenses = _context.Expenses.Where(x => !x.IsDeleted).AsQueryable();
 
             // 🔹 Filter by From/To date (priority)
             if (from.HasValue || to.HasValue)
@@ -152,10 +152,13 @@ namespace TaskManagementSystem.Controllers
             var expense = _context.Expenses.Find(id);
             if (expense == null) return NotFound();
 
-            _context.Expenses.Remove(expense);
+            // Soft delete
+            expense.IsDeleted = true;
             _context.SaveChanges();
+
             return RedirectToAction("Index");
         }
+
 
         [HttpGet]
         public async Task<IActionResult> ExpenseReport(string? month, DateTime? from, DateTime? to)
@@ -163,7 +166,7 @@ namespace TaskManagementSystem.Controllers
             var userId = HttpContext.Session.GetInt32("UserId");
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown User";
 
-            var expenses = _context.Expenses.AsQueryable();
+            var expenses = _context.Expenses.Where(x => !x.IsDeleted).AsQueryable();
 
             // Filter by From/To date (priority)
             if (from.HasValue || to.HasValue)
