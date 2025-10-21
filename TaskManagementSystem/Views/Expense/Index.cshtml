@@ -39,10 +39,11 @@
                 Filter Expense
             </button>
 
-            <!-- Reset Expense -->
-            <button type="submit" name="action" value="reset" class="btn btn-secondary flex-grow-1">
+            <button type="submit" name="action" value="reset" class="btn btn-secondary flex-grow-1"
+                    onclick="window.location='@Url.Action("Index")'; return false;">
                 Reset
             </button>
+
 
             <!-- Make Expense Report -->
             <button type="submit" name="action" value="report" class="btn btn-primary flex-grow-1">
