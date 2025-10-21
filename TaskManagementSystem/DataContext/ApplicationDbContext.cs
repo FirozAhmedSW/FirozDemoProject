@@ -19,6 +19,8 @@ namespace TaskManagementSystem.DataContext
         public DbSet<ActivityLog> ActivityLogs { get; set; }
 
         public DbSet<TaskItem> Tasks { get; set; }
+        public DbSet<Expense> Expenses { get; set; }
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

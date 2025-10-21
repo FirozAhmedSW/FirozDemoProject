@@ -1,0 +1,72 @@
+﻿@model IEnumerable<TaskManagementSystem.Models.Expense>
+
+@{
+    ViewData["Title"] = "Expense Report";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Expense Report</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus"></i> Add Expense
+        </a>
+    </div>
+
+    <!-- 🔹 Filter Section -->
+    <form method="get" asp-action="Index" class="row g-3 align-items-end mb-4">
+        <div class="col-md-3">
+            <label class="form-label">Select Month</label>
+            <input type="month" name="month" class="form-control" value="@ViewBag.SelectedMonth" />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">From Date</label>
+            <input type="date" name="from" class="form-control" value="@ViewBag.FromDate" />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">To Date</label>
+            <input type="date" name="to" class="form-control" value="@ViewBag.ToDate" />
+        </div>
+
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-success w-100">Show Report</button>
+        </div>
+    </form>
+
+    <!-- 🔹 Expense Table -->
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th class="text-end">Amount</th>
+                <th>Added By</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="4" class="text-center text-danger">No records found</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Date.ToString("dd-MM-yyyy")</td>
+                        <td>@item.Description</td>
+                        <td class="text-end">@item.Amount.ToString("0.00")</td>
+                        <td>@item.CreatedByUserName</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <h4 class="text-end mt-3">
+        <strong>Total:</strong> @ViewBag.TotalAmount?.ToString("0.00") ৳
+    </h4>
+</div>
