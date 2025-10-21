@@ -6,14 +6,14 @@
 
 <h2>Expense Report</h2>
 
-<form method="get" asp-action="Report" class="row g-3 mb-4">
+<form method="get" asp-action="Index" class="row g-3 mb-4">
     <div class="col-md-3">
         <label class="form-label">From Date</label>
-        <input type="date" name="from" class="form-control" />
+        <input type="date" name="from" class="form-control" value="@ViewBag.FromDate" />
     </div>
     <div class="col-md-3">
         <label class="form-label">To Date</label>
-        <input type="date" name="to" class="form-control" />
+        <input type="date" name="to" class="form-control" value="@ViewBag.ToDate" />
     </div>
     <div class="col-md-3 d-flex align-items-end">
         <button type="submit" class="btn btn-success w-100">Filter</button>
@@ -32,7 +32,9 @@
         @foreach (var item in Model)
         {
             <tr>
-                <td>@item.Date.ToString("dd-MM-yyyy")</td>
+                <td>
+                    @(item.Date.HasValue ? item.Date.Value.ToString("dd-MM-yyyy") : "-")
+                </td>
                 <td>@item.Description</td>
                 <td class="text-end">@item.Amount.ToString("0.00")</td>
             </tr>

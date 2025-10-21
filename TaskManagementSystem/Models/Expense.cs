@@ -6,9 +6,9 @@ namespace TaskManagementSystem.Models
 {
     public class Expense : Base
     {
-        [Required]
+
         [DataType(DataType.Date)]
-        public DateTime Date { get; set; } = DateTime.Now;
+        public DateTime? Date { get; set; } = DateTime.Now;
 
         [Required]
         [StringLength(200)]

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models;
+using System.Linq;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -13,7 +14,7 @@ namespace TaskManagementSystem.Controllers
             _context = context;
         }
 
-        // ✅ Index (Main Report Page)
+        // ✅ Index / Main Report Page
         [HttpGet]
         public IActionResult Index(string? month, DateTime? from, DateTime? to)
         {
@@ -21,42 +22,47 @@ namespace TaskManagementSystem.Controllers
 
             if (!string.IsNullOrEmpty(month))
             {
-                // Month format: "yyyy-MM"
-                var selectedMonth = DateTime.Parse($"{month}-01");
-                var monthStart = new DateTime(selectedMonth.Year, selectedMonth.Month, 1);
-                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+                // Parse month in "yyyy-MM" format
+                if (DateTime.TryParse($"{month}-01", out var selectedMonth))
+                {
+                    var monthStart = new DateTime(selectedMonth.Year, selectedMonth.Month, 1);
+                    var monthEnd = monthStart.AddMonths(1).AddDays(-1);
 
-                expenses = expenses.Where(x => x.Date >= monthStart && x.Date <= monthEnd);
-
-                ViewBag.SelectedMonth = month;
+                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value <= monthEnd);
+                    ViewBag.SelectedMonth = month;
+                }
             }
             else if (from.HasValue && to.HasValue)
             {
-                expenses = expenses.Where(x => x.Date >= from.Value && x.Date <= to.Value);
+                expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= from.Value && x.Date.Value <= to.Value);
                 ViewBag.FromDate = from.Value.ToString("yyyy-MM-dd");
                 ViewBag.ToDate = to.Value.ToString("yyyy-MM-dd");
             }
             else
             {
-                // Default current month report
+                // Default: current month
                 var currentMonth = DateTime.Now.Month;
                 var currentYear = DateTime.Now.Year;
-                expenses = expenses.Where(x => x.Date.Month == currentMonth && x.Date.Year == currentYear);
+                expenses = expenses.Where(x => x.Date.HasValue &&
+                                               x.Date.Value.Month == currentMonth &&
+                                               x.Date.Value.Year == currentYear);
                 ViewBag.SelectedMonth = DateTime.Now.ToString("yyyy-MM");
             }
 
-            ViewBag.TotalAmount = expenses.Sum(x => x.Amount);
+            ViewBag.TotalAmount = expenses.Any() ? expenses.Sum(x => x.Amount) : 0;
             return View(expenses.ToList());
         }
 
-        // ✅ Create form
+        // ✅ GET: Create Form
         [HttpGet]
         public IActionResult Create()
         {
             return View();
         }
 
+        // ✅ POST: Create Expense
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Create(Expense model)
         {
             if (ModelState.IsValid)
@@ -64,8 +70,8 @@ namespace TaskManagementSystem.Controllers
                 var userId = HttpContext.Session.GetInt32("UserId") ?? 0;
                 var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
 
-                // যদি user তারিখ না দেয় (default 0001-01-01 থাকে), তাহলে current date সেট করে দেবে
-                if (model.Date == default(DateTime) || model.Date == DateTime.MinValue)
+                // Assign current date if null
+                if (!model.Date.HasValue)
                 {
                     model.Date = DateTime.Now;
                 }
@@ -81,6 +87,5 @@ namespace TaskManagementSystem.Controllers
 
             return View(model);
         }
-
     }
 }

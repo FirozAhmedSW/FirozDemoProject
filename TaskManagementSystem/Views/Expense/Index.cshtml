@@ -4,7 +4,7 @@
     ViewData["Title"] = "Expense Report";
 }
 
-<div class="container mt-4">
+<div class="">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Expense Report</h2>
         <a asp-action="Create" class="btn btn-primary">
@@ -56,7 +56,7 @@
                 foreach (var item in Model)
                 {
                     <tr>
-                        <td>@item.Date.ToString("dd-MM-yyyy")</td>
+                        <td>@(item.Date.HasValue ? item.Date.Value.ToString("dd-MM-yyyy") : "-")</td>
                         <td>@item.Description</td>
                         <td class="text-end">@item.Amount.ToString("0.00")</td>
                         <td>@item.CreatedByUserName</td>
