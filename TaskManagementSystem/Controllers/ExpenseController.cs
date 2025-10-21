@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models;
+using System.Linq;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -14,24 +14,14 @@ namespace TaskManagementSystem.Controllers
             _context = context;
         }
 
-        // ✅ Index / Main Report Page
+        // ✅ Index / Main Report Page with Filters + Pagination
         [HttpGet]
-        public IActionResult Index(string? month, DateTime? from, DateTime? to)
+        public IActionResult Index(string? month, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
         {
             var expenses = _context.Expenses.AsQueryable();
 
-            if (!string.IsNullOrEmpty(month))
-            {
-                if (DateTime.TryParse($"{month}-01", out var selectedMonth))
-                {
-                    var monthStart = new DateTime(selectedMonth.Year, selectedMonth.Month, 1);
-                    var monthEnd = monthStart.AddMonths(1).AddDays(-1);
-
-                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value <= monthEnd);
-                    ViewBag.SelectedMonth = month;
-                }
-            }
-            else if (from.HasValue || to.HasValue)
+            // 🔹 Filter by From/To date (priority)
+            if (from.HasValue || to.HasValue)
             {
                 if (from.HasValue)
                     expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= from.Value);
@@ -40,6 +30,18 @@ namespace TaskManagementSystem.Controllers
 
                 ViewBag.FromDate = from?.ToString("yyyy-MM-dd");
                 ViewBag.ToDate = to?.ToString("yyyy-MM-dd");
+                ViewBag.SelectedMonth = null;
+            }
+            // 🔹 Filter by month if no date range
+            else if (!string.IsNullOrEmpty(month))
+            {
+                if (DateTime.TryParse($"{month}-01", out var selectedMonth))
+                {
+                    var monthStart = new DateTime(selectedMonth.Year, selectedMonth.Month, 1);
+                    var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value <= monthEnd);
+                    ViewBag.SelectedMonth = month;
+                }
             }
             else
             {
@@ -50,15 +52,30 @@ namespace TaskManagementSystem.Controllers
                                                x.Date.Value.Month == currentMonth &&
                                                x.Date.Value.Year == currentYear);
                 ViewBag.SelectedMonth = DateTime.Now.ToString("yyyy-MM");
+                ViewBag.FromDate = null;
+                ViewBag.ToDate = null;
             }
 
+            // 🔹 Pagination
+            var totalRecords = expenses.Count();
+            var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalRecords / pageSize)); // Always at least 1
+
+            page = Math.Max(1, Math.Min(page, totalPages)); // Ensure page in range
+
+            var expensesList = expenses
+                .OrderByDescending(x => x.Date)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
             ViewBag.TotalAmount = expenses.Any() ? expenses.Sum(x => x.Amount) : 0;
+            ViewBag.CurrentPage = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalRecords = totalRecords;
+            ViewBag.TotalPages = totalPages;
 
-            return View(expenses.OrderByDescending(x => x.Date).ToList());
+            return View(expensesList);
         }
-
-
-
 
         // ✅ GET: Create Form
         [HttpGet]
@@ -77,18 +94,22 @@ namespace TaskManagementSystem.Controllers
                 var userId = HttpContext.Session.GetInt32("UserId") ?? 0;
                 var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
 
-                model.Date ??= DateTime.Now;
+                if (!model.Date.HasValue)
+                    model.Date = DateTime.Now;
+
                 model.CreatedByUserId = userId;
                 model.CreatedByUserName = userName;
 
                 _context.Expenses.Add(model);
                 _context.SaveChanges();
+
                 return RedirectToAction("Index");
             }
+
             return View(model);
         }
 
-        // ✅ GET: Edit Expense
+        // ✅ GET: Edit
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -97,21 +118,19 @@ namespace TaskManagementSystem.Controllers
             return View(expense);
         }
 
-        // ✅ POST: Edit Expense
+        // ✅ POST: Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Expense model)
+        public IActionResult Edit(Expense model)
         {
-            if (id != model.Id) return BadRequest();
-
             if (ModelState.IsValid)
             {
-                var expense = _context.Expenses.Find(id);
+                var expense = _context.Expenses.Find(model.Id);
                 if (expense == null) return NotFound();
 
-                expense.Date = model.Date ?? DateTime.Now;
                 expense.Description = model.Description;
                 expense.Amount = model.Amount;
+                expense.Date = model.Date ?? DateTime.Now;
 
                 _context.SaveChanges();
                 return RedirectToAction("Index");
@@ -119,7 +138,7 @@ namespace TaskManagementSystem.Controllers
             return View(model);
         }
 
-        // ✅ POST: Delete Expense
+        // ✅ POST: Delete
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
@@ -129,7 +148,6 @@ namespace TaskManagementSystem.Controllers
 
             _context.Expenses.Remove(expense);
             _context.SaveChanges();
-
             return RedirectToAction("Index");
         }
     }
