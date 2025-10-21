@@ -2,6 +2,9 @@
 using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models;
 using System.Linq;
+using iTextSharp.text.pdf;
+using iTextSharp.text;
+using Microsoft.EntityFrameworkCore;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -9,9 +12,12 @@ namespace TaskManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public ExpenseController(ApplicationDbContext context)
+        private readonly IWebHostEnvironment _environment;
+
+        public ExpenseController(ApplicationDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         // ✅ Index / Main Report Page with Filters + Pagination
@@ -150,5 +156,118 @@ namespace TaskManagementSystem.Controllers
             _context.SaveChanges();
             return RedirectToAction("Index");
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ExpenseReport(string? month, DateTime? from, DateTime? to)
+        {
+            var expenses = _context.Expenses.AsQueryable();
+
+            // Filter by From/To date (priority)
+            if (from.HasValue || to.HasValue)
+            {
+                if (from.HasValue)
+                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= from.Value);
+                if (to.HasValue)
+                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value <= to.Value);
+            }
+            else if (!string.IsNullOrEmpty(month)) // Filter by month if no date range
+            {
+                if (DateTime.TryParse($"{month}-01", out var selectedMonth))
+                {
+                    var monthStart = new DateTime(selectedMonth.Year, selectedMonth.Month, 1);
+                    var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value <= monthEnd);
+                }
+            }
+            else // Default: current month
+            {
+                var currentMonth = DateTime.Now.Month;
+                var currentYear = DateTime.Now.Year;
+                expenses = expenses.Where(x => x.Date.HasValue &&
+                                               x.Date.Value.Month == currentMonth &&
+                                               x.Date.Value.Year == currentYear);
+            }
+
+            var expenseList = await expenses.OrderByDescending(x => x.Date).ToListAsync();
+            if (!expenseList.Any())
+            {
+                TempData["Error"] = "No expenses found for the selected filter.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // ── PDF Setup ──
+            using var ms = new MemoryStream();
+            var doc = new Document(PageSize.A4.Rotate(), 20f, 20f, 40f, 40f);
+            PdfWriter.GetInstance(doc, ms);
+            doc.Open();
+
+            // Font
+            var fontPath = Path.Combine(_environment.WebRootPath, "fonts", "arial.ttf");
+            if (!System.IO.File.Exists(fontPath))
+                fontPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
+
+            var baseFont = BaseFont.CreateFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            var normalFont = new Font(baseFont, 10);
+            var boldFont = new Font(baseFont, 12, Font.BOLD);
+            var headerFont = new Font(baseFont, 20, Font.BOLD);
+
+            // Header
+            var logoPath = Path.Combine(_environment.WebRootPath, "images", "fire_logo.png");
+            var headerTable = new PdfPTable(2) { WidthPercentage = 100, SpacingAfter = 10f };
+            headerTable.SetWidths(new float[] { 15f, 85f });
+
+            if (System.IO.File.Exists(logoPath))
+            {
+                var logo = iTextSharp.text.Image.GetInstance(logoPath);
+                logo.ScaleAbsolute(50f, 50f);
+                headerTable.AddCell(new PdfPCell(logo) { Border = Rectangle.NO_BORDER, HorizontalAlignment = Element.ALIGN_RIGHT });
+            }
+            else
+            {
+                headerTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+            }
+
+            headerTable.AddCell(new PdfPCell(new Phrase("Expense Report", headerFont))
+            {
+                Border = Rectangle.NO_BORDER,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE
+            });
+
+            doc.Add(headerTable);
+            doc.Add(new Paragraph("\n"));
+
+            // Subtitle / Filters
+            var filterParts = new List<string>();
+            if (!string.IsNullOrEmpty(month)) filterParts.Add($"Month: {month}");
+            if (from.HasValue && to.HasValue) filterParts.Add($"Date: {from:dd-MMM-yyyy} to {to:dd-MMM-yyyy}");
+            var subtitleText = $"Total Expenses: {expenseList.Count}" + (filterParts.Count > 0 ? $" (Filters – {string.Join(", ", filterParts)})" : "");
+            var subtitle = new Paragraph(subtitleText, normalFont) { Alignment = Element.ALIGN_CENTER, SpacingAfter = 10f };
+            doc.Add(subtitle);
+
+            // Table
+            var table = new PdfPTable(5) { WidthPercentage = 100f };
+            table.SetWidths(new float[] { 5f, 25f, 40f, 15f, 15f });
+            string[] headers = { "SL", "Date", "Description", "Amount", "Added By" };
+            foreach (var h in headers)
+                table.AddCell(new PdfPCell(new Phrase(h, boldFont)) { HorizontalAlignment = Element.ALIGN_CENTER, BackgroundColor = BaseColor.LightGray, Padding = 5f });
+
+            int sl = 1;
+            foreach (var exp in expenseList)
+            {
+                table.AddCell(new PdfPCell(new Phrase(sl.ToString(), normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(exp.Date?.ToString("dd-MMM-yyyy") ?? "-", normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(exp.Description, normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(exp.Amount.ToString("0.00"), normalFont)) { Padding = 5f, HorizontalAlignment = Element.ALIGN_RIGHT });
+                table.AddCell(new PdfPCell(new Phrase(exp.CreatedByUserName ?? "-", normalFont)) { Padding = 5f });
+                sl++;
+            }
+
+            doc.Add(table);
+            doc.Close();
+
+            return File(ms.ToArray(), "application/pdf", "ExpenseReport.pdf");
+        }
+
     }
 }
