@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models;
-using System.Linq;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -22,7 +22,6 @@ namespace TaskManagementSystem.Controllers
 
             if (!string.IsNullOrEmpty(month))
             {
-                // Parse month in "yyyy-MM" format
                 if (DateTime.TryParse($"{month}-01", out var selectedMonth))
                 {
                     var monthStart = new DateTime(selectedMonth.Year, selectedMonth.Month, 1);
@@ -32,11 +31,15 @@ namespace TaskManagementSystem.Controllers
                     ViewBag.SelectedMonth = month;
                 }
             }
-            else if (from.HasValue && to.HasValue)
+            else if (from.HasValue || to.HasValue)
             {
-                expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= from.Value && x.Date.Value <= to.Value);
-                ViewBag.FromDate = from.Value.ToString("yyyy-MM-dd");
-                ViewBag.ToDate = to.Value.ToString("yyyy-MM-dd");
+                if (from.HasValue)
+                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value >= from.Value);
+                if (to.HasValue)
+                    expenses = expenses.Where(x => x.Date.HasValue && x.Date.Value <= to.Value);
+
+                ViewBag.FromDate = from?.ToString("yyyy-MM-dd");
+                ViewBag.ToDate = to?.ToString("yyyy-MM-dd");
             }
             else
             {
@@ -50,7 +53,8 @@ namespace TaskManagementSystem.Controllers
             }
 
             ViewBag.TotalAmount = expenses.Any() ? expenses.Sum(x => x.Amount) : 0;
-            return View(expenses.ToList());
+
+            return View(expenses.OrderByDescending(x => x.Date).ToList());
         }
 
         // ✅ GET: Create Form
@@ -70,22 +74,60 @@ namespace TaskManagementSystem.Controllers
                 var userId = HttpContext.Session.GetInt32("UserId") ?? 0;
                 var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
 
-                // Assign current date if null
-                if (!model.Date.HasValue)
-                {
-                    model.Date = DateTime.Now;
-                }
-
+                model.Date ??= DateTime.Now;
                 model.CreatedByUserId = userId;
                 model.CreatedByUserName = userName;
 
                 _context.Expenses.Add(model);
                 _context.SaveChanges();
-
                 return RedirectToAction("Index");
             }
-
             return View(model);
+        }
+
+        // ✅ GET: Edit Expense
+        [HttpGet]
+        public IActionResult Edit(int id)
+        {
+            var expense = _context.Expenses.Find(id);
+            if (expense == null) return NotFound();
+            return View(expense);
+        }
+
+        // ✅ POST: Edit Expense
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit(int id, Expense model)
+        {
+            if (id != model.Id) return BadRequest();
+
+            if (ModelState.IsValid)
+            {
+                var expense = _context.Expenses.Find(id);
+                if (expense == null) return NotFound();
+
+                expense.Date = model.Date ?? DateTime.Now;
+                expense.Description = model.Description;
+                expense.Amount = model.Amount;
+
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            return View(model);
+        }
+
+        // ✅ POST: Delete Expense
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Delete(int id)
+        {
+            var expense = _context.Expenses.Find(id);
+            if (expense == null) return NotFound();
+
+            _context.Expenses.Remove(expense);
+            _context.SaveChanges();
+
+            return RedirectToAction("Index");
         }
     }
 }
