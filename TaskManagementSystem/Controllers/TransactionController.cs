@@ -23,7 +23,7 @@ namespace TaskManagementSystem.Controllers
         public async Task<IActionResult> Index(string month, DateTime? from, DateTime? to, int page = 1)
         {
             int pageSize = 10;
-            var userName = User.Identity?.Name ?? "Guest";
+            var userName = HttpContext.Session.GetString("UserName");
 
             var query = _context.Transactions
                 .Include(t => t.User)
@@ -202,7 +202,18 @@ namespace TaskManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var totalAmount = transactionList.Sum(x => x.Amount);
+            // 🔹 Person-wise summary (Type-wise)
+            var summaryData = transactionList
+                .GroupBy(x => new { x.PersonName, x.Type })
+                .Select(g => new
+                {
+                    Person = g.Key.PersonName ?? "-",
+                    Type = g.Key.Type ?? "-",
+                    TotalAmount = g.Sum(x => x.Amount)
+                })
+                .OrderBy(x => x.Person)
+                .ThenBy(x => x.Type)
+                .ToList();
 
             // ── PDF Setup ──
             using var ms = new MemoryStream();
@@ -264,7 +275,23 @@ namespace TaskManagementSystem.Controllers
             };
             doc.Add(subtitle);
 
-            // ── Table ──
+            // ── Person-wise Summary Table ──
+            var summaryTable = new PdfPTable(3) { WidthPercentage = 60f, SpacingAfter = 15f, HorizontalAlignment = Element.ALIGN_LEFT };
+            summaryTable.SetWidths(new float[] { 40f, 30f, 30f });
+            summaryTable.AddCell(new PdfPCell(new Phrase("Person", boldFont)) { Padding = 5f, BackgroundColor = BaseColor.LightGray });
+            summaryTable.AddCell(new PdfPCell(new Phrase("Type", boldFont)) { Padding = 5f, BackgroundColor = BaseColor.LightGray });
+            summaryTable.AddCell(new PdfPCell(new Phrase("Total Amount", boldFont)) { Padding = 5f, BackgroundColor = BaseColor.LightGray, HorizontalAlignment = Element.ALIGN_RIGHT });
+
+            foreach (var s in summaryData)
+            {
+                summaryTable.AddCell(new PdfPCell(new Phrase(s.Person, normalFont)) { Padding = 5f });
+                summaryTable.AddCell(new PdfPCell(new Phrase(s.Type, normalFont)) { Padding = 5f });
+                summaryTable.AddCell(new PdfPCell(new Phrase(s.TotalAmount.ToString("0.00") + " ৳", normalFont)) { Padding = 5f, HorizontalAlignment = Element.ALIGN_RIGHT });
+            }
+
+            doc.Add(summaryTable);
+
+            // ── Transaction Table (Optional, full listing) ──
             var table = new PdfPTable(6) { WidthPercentage = 100f };
             table.SetWidths(new float[] { 5f, 20f, 20f, 25f, 15f, 15f });
             string[] headers = { "SL", "Date", "Person", "Description", "Amount", "Type" };
@@ -287,20 +314,6 @@ namespace TaskManagementSystem.Controllers
                 table.AddCell(new PdfPCell(new Phrase(t.Type ?? "-", normalFont)) { Padding = 5f });
                 sl++;
             }
-
-            // ── Total Row ──
-            table.AddCell(new PdfPCell(new Phrase("Total", boldFont))
-            {
-                Colspan = 4,
-                HorizontalAlignment = Element.ALIGN_RIGHT,
-                Padding = 5f
-            });
-            table.AddCell(new PdfPCell(new Phrase(totalAmount.ToString("0.00"), boldFont))
-            {
-                HorizontalAlignment = Element.ALIGN_RIGHT,
-                Padding = 5f
-            });
-            table.AddCell(new PdfPCell(new Phrase("")) { Padding = 5f }); // empty for Type
 
             doc.Add(table);
             doc.Close();
