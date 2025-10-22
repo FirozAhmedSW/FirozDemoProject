@@ -1,0 +1,96 @@
+﻿@model IEnumerable<TaskManagementSystem.Models.Transaction>
+
+@{
+    ViewData["Title"] = "💰 Transaction Report";
+}
+
+<div class="">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-primary">Transaction Report</h2>
+        <div class="d-flex gap-2">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Transaction
+            </a>
+            <button type="submit" form="filterForm" formaction="@Url.Action("TransactionReport")" class="btn btn-success">
+                <i class="bi bi-file-earmark-pdf"></i> Generate PDF Report
+            </button>
+        </div>
+    </div>
+
+    <!-- 🔹 Filter Section -->
+    <form id="filterForm" method="get" asp-action="Index" class="row g-3 align-items-end mb-4">
+        <div class="col-md-2">
+            <label class="form-label">Select Month</label>
+            <input type="month" name="month" class="form-control" value="@ViewBag.SelectedMonth" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">From</label>
+            <input type="date" name="from" class="form-control" value="@ViewBag.FromDate" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">To</label>
+            <input type="date" name="to" class="form-control" value="@ViewBag.ToDate" />
+        </div>
+        <div class="col-md-6 d-flex gap-2">
+            <button type="submit" name="action" value="filter" class="btn btn-success flex-grow-1">Filter</button>
+            <a asp-action="Index" class="btn btn-secondary flex-grow-1">Reset</a>
+        </div>
+    </form>
+
+    <!-- 🔹 Table -->
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Person</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th class="text-end">Amount</th>
+                <th>Added By</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr><td colspan="7" class="text-center text-danger">No transactions found</td></tr>
+            }
+            else
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Date.ToString("dd-MM-yyyy")</td>
+                        <td>@item.PersonName</td>
+                        <td>@item.Type</td>
+                        <td>@item.Description</td>
+                        <td class="text-end">@item.Amount.ToString("0.00") ৳</td>
+                        <td>@item.CreatedByUserName</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary"><i class="bi bi-pencil-square"></i></a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <!-- 🔹 Pagination & Summary -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            @if (Model.Any())
+            {
+                var startRecord = ((int)ViewBag.CurrentPage - 1) * (int)ViewBag.PageSize + 1;
+                var endRecord = Math.Min(startRecord + (int)ViewBag.PageSize - 1, (int)ViewBag.TotalRecords);
+                <span>Total Records: @ViewBag.TotalRecords, Showing @startRecord – @endRecord</span>
+            }
+        </div>
+
+        <div class="fw-bold text-primary">
+            Total: @ViewBag.TotalAmount?.ToString("0.00") ৳
+        </div>
+    </div>
+</div>

@@ -20,6 +20,8 @@ namespace TaskManagementSystem.DataContext
 
         public DbSet<TaskItem> Tasks { get; set; }
         public DbSet<Expense> Expenses { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+
 
 
 
