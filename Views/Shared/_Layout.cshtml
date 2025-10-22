@@ -1,0 +1,194 @@
+﻿@*
+    EmployeePortal layout with left sidebar, topbar, dropdown, and sticky footer
+*@
+@using TaskManagementSystem.Models
+@inject TaskManagementSystem.DataContext.ApplicationDbContext _context
+@{
+    var userName = Context.Session.GetString("UserName");
+    string userPhoto = "/images/default-avatar.jpg"; // default fallback
+
+    if (!string.IsNullOrEmpty(userName))
+    {
+        var userId = Context.Session.GetInt32("UserId");
+        if (userId != null)
+        {
+            var currentUser = _context.Users.FirstOrDefault(u => u.Id == userId.Value && !u.IsDeleted);
+            if (currentUser != null && !string.IsNullOrEmpty(currentUser.PhotoPath))
+            {
+                userPhoto = currentUser.PhotoPath;
+            }
+        }
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - EmployeePortal</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/EmployeePortal.styles.css" asp-append-version="true" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wrapper {
+            display: flex;
+            flex: 1 0 auto;
+        }
+
+        .sidebar {
+            min-width: 200px;
+            max-width: 239px;
+            background-color:#040403;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .sidebar .nav-link {
+            color: #fff;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: #3b5998;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 0px 20px;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            padding: 20px;
+        }
+
+        footer {
+            background-color: #0dcaf0;
+            color: black;
+            padding: 15px 0;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            object-fit: cover;
+            border: 2px solid #fff;
+            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        }
+
+        .dropdown-menu-end {
+            right: 0;
+            left: auto;
+        }
+    </style>
+</head>
+<body>
+    @if (!string.IsNullOrEmpty(userName))
+    {
+        <div class="wrapper">
+            <!-- Sidebar -->
+            <nav class="sidebar d-flex flex-column p-3">
+                <h4 class="text-center mb-4 fw-bold">Task Management</h4>
+
+                <ul class="nav nav-pills flex-column mb-auto">
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home") ? "active" : "")"
+                           asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "List") ? "active" : "")"
+                           asp-area="" asp-controller="Employee" asp-action="List">Employee List</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "Create") ? "active" : "")"
+                           asp-area="" asp-controller="Employee" asp-action="Create">Add Employee</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
+                           asp-area="" asp-controller="Account" asp-action="Index">User Info</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Task" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
+                           asp-area="" asp-controller="Task" asp-action="Index">Daily Task</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "ActivityLogs" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
+                           asp-area="" asp-controller="ActivityLogs" asp-action="Index">ActivityLogs Info</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Expense" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
+                           asp-area="" asp-controller="Expense" asp-action="Index">Expense Info</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Game" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
+                           asp-area="" asp-controller="Game" asp-action="Index">Play 🎮 Games for fun</a>
+                    </li>
+
+                </ul>
+            </nav>
+
+            <!-- Main content -->
+            <div class="main-content">
+                <!-- Topbar -->
+                <div class="topbar d-flex bg-info justify-content-between align-items-center">
+                    <h5 class="mb-0">@ViewData["Title"]</h5>
+                    <ul class="navbar-nav flex-row align-items-center m-0 p-0 list-unstyled">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="@userPhoto" alt="User Avatar" class="rounded-circle me-2 user-avatar" />
+                                <span class="fw-semibold d-none d-lg-inline">@userName</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Profile">Profile</a></li>
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Settings">Settings</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item text-danger" asp-area="" asp-controller="Account" asp-action="Logout">Logout</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Page Content -->
+                <div class="content-wrapper">
+                    @RenderBody()
+                </div>
+
+                <!-- Footer -->
+                <footer class="mt-auto">
+                    &copy; 2025 EmployeePortal. All rights reserved.
+                </footer>
+            </div>
+        </div>
+    }
+    else
+    {
+        @RenderBody()
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

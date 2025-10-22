@@ -1,0 +1,44 @@
+﻿@model IEnumerable<TaskManagementSystem.Models.User>
+@{
+    ViewData["Title"] = "User Info";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col-md-4">
+        <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" />
+    </div>
+    <div class="col-md-8 text-end">
+        <a href="@Url.Action("Create", "Account")" class="btn btn-primary">Add User</a>
+        <a href="@Url.Action("UserReport", "Account")" class="btn btn-success ms-2">Generate Report</a> <!-- ✅ Report button -->
+    </div>
+</div>
+
+<div id="userTableContainer">
+    @Html.Partial("_UserTable", Model)
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let typingTimer;
+        const delay = 400; // typing delay in ms
+
+        $("#searchBox").on("keyup", function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(loadUsers, delay);
+        });
+
+        function loadUsers(page = 1) {
+            const searchText = $("#searchBox").val();
+            $.get("@Url.Action("Index", "Account")", { searchText: searchText, page: page }, function (data) {
+                $("#userTableContainer").html(data);
+            });
+        }
+
+        $(document).on("click", ".page-link", function (e) {
+            e.preventDefault();
+            const page = $(this).data("page");
+            loadUsers(page);
+        });
+    </script>
+}

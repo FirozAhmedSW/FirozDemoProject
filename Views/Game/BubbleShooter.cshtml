@@ -1,0 +1,204 @@
+﻿@{
+    ViewData["Title"] = "🎯 Realistic Bubble Shooter";
+}
+
+<h2 class="text-center text-primary mb-4">🎯 Realistic Bubble Shooter</h2>
+
+<div class="text-center mb-3">
+    <button id="restartBtn" class="btn btn-warning ms-4">🔁 Restart</button>
+</div>
+
+<div class="d-flex justify-content-center">
+    <canvas id="bubbleCanvas" width="520" height="600"
+            style="border:2px solid #333;border-radius:10px;background:linear-gradient(to top,#d0f0ff,#ffffff);box-shadow:0 0 20px rgba(0,0,0,0.3);"></canvas>
+</div>
+
+<style>
+    body {
+        background: linear-gradient(to right, #e0f7fa, #fff3e0);
+        font-family: 'Poppins', sans-serif;
+    }
+</style>
+
+<script>
+    const canvas = document.getElementById("bubbleCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const restartBtn = document.getElementById("restartBtn");
+
+    const BUBBLE_RADIUS = 15;
+    const ROWS = 8;
+    const COLS = 11;
+    const bubbles = [];
+
+    let shooterX = canvas.width / 2;
+    let shooterY = canvas.height - 50;
+    let angle = 0;
+    let currentBubble = null;
+    let shooting = false;
+    let nextColor = randomColor();
+
+    function randomColor() {
+        const colors = ["#ff4b5c", "#4285f4", "#fbbc05", "#34a853", "#9c27b0", "#ff9800"];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function initBubbles() {
+        for (let r = 0; r < ROWS; r++) {
+            bubbles[r] = [];
+            for (let c = 0; c < COLS; c++) {
+                const x = 40 + c * (BUBBLE_RADIUS * 2 + 4);
+                const y = 50 + r * (BUBBLE_RADIUS * 2 + 4);
+                bubbles[r][c] = { x, y, color: randomColor(), active: true };
+            }
+        }
+    }
+
+    function drawBubbles() {
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const b = bubbles[r][c];
+                if (b.active) {
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, BUBBLE_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = b.color;
+                    ctx.fill();
+                    ctx.strokeStyle = "#222";
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    function drawShooter() {
+        // Draw cannon base
+        ctx.save();
+        ctx.translate(shooterX, shooterY);
+        ctx.rotate(angle);
+        ctx.fillStyle = "#444";
+        ctx.fillRect(-5, -40, 10, 40);
+        ctx.restore();
+
+        // Draw next bubble
+        if (!shooting) {
+            ctx.beginPath();
+            ctx.arc(shooterX, shooterY, BUBBLE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = nextColor;
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // Draw moving bubble
+        if (shooting && currentBubble) {
+            ctx.beginPath();
+            ctx.arc(currentBubble.x, currentBubble.y, BUBBLE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = currentBubble.color;
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
+
+    function shootBubble() {
+        if (shooting) return;
+        const speed = 7;
+        currentBubble = {
+            x: shooterX,
+            y: shooterY,
+            color: nextColor,
+            dx: speed * Math.sin(angle),
+            dy: -speed * Math.cos(angle)
+        };
+        nextColor = randomColor();
+        shooting = true;
+    }
+
+    function explodeConnected(color, hitX, hitY) {
+        let exploded = 0;
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const b = bubbles[r][c];
+                if (b.active && b.color === color) {
+                    const dx = hitX - b.x;
+                    const dy = hitY - b.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 45) {
+                        b.active = false;
+                        exploded++;
+                    }
+                }
+            }
+        }
+        return exploded;
+    }
+
+    function checkCollision() {
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const b = bubbles[r][c];
+                if (b.active) {
+                    const dx = currentBubble.x - b.x;
+                    const dy = currentBubble.y - b.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < BUBBLE_RADIUS * 2) {
+                        explodeConnected(b.color, b.x, b.y);
+                        shooting = false;
+                        currentBubble = null;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBubbles();
+        drawShooter();
+
+        if (shooting && currentBubble) {
+            currentBubble.x += currentBubble.dx;
+            currentBubble.y += currentBubble.dy;
+
+            // Wall bounce
+            if (currentBubble.x < BUBBLE_RADIUS || currentBubble.x > canvas.width - BUBBLE_RADIUS) {
+                currentBubble.dx *= -1;
+            }
+
+            // Top collision or hit
+            if (currentBubble.y < BUBBLE_RADIUS) {
+                shooting = false;
+                currentBubble = null;
+            }
+
+            checkCollision();
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+        initBubbles();
+        shooting = false;
+        currentBubble = null;
+        nextColor = randomColor();
+    }
+
+    // Mouse aim
+    canvas.addEventListener("mousemove", e => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        angle = Math.atan2(x - shooterX, shooterY - y);
+        if (angle < -0.7) angle = -0.7;
+        if (angle > 0.7) angle = 0.7;
+    });
+
+    canvas.addEventListener("click", shootBubble);
+    restartBtn.addEventListener("click", startGame);
+
+    document.addEventListener("keydown", e => {
+        if (e.key === " ") shootBubble();
+    });
+
+    startGame();
+    gameLoop();
+</script>

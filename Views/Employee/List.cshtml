@@ -1,0 +1,188 @@
+﻿@model TaskManagementSystem.Models.EmployeeListViewModel
+@{
+    ViewData["Title"] = "Employee List";
+    var pageSizeOptions = new List<int> { 3, 5, 10, 15, 20 };
+}
+<div class=" mt-1">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded shadow-sm">
+                <h2 class="mb-0 text-primary"><i class="bi bi-people-fill"></i> @ViewData["Title"]</h2>
+                <a class="btn btn-success btn-lg" asp-action="Create">
+                    <i class="bi bi-plus-circle"></i> Create New Employee
+                </a>
+            </div>
+            @if (TempData["Message"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Message"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            <!-- Filter Section -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">🔍 Filter Employees</h5>
+                    <span class="badge bg-light text-dark">Total Employees: @Model.Total 📝</span>
+                </div>
+                <div class="card-body">
+                    <form method="get" asp-controller="Employee" asp-action="List" class="row g-3">
+                        <div class="col-md-3">
+                            <label asp-for="SearchTerm" class="form-label">🔍 Search by Name</label>
+                            <input asp-for="SearchTerm" class="form-control" placeholder="Type a name..." />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="SelectedDepartmentId" class="form-label">🖥️ Department</label>
+                            <select asp-for="SelectedDepartmentId" asp-items="@(new SelectList(Model.Departments, "Id", "Name"))" class="form-control">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="SelectedEmployeeTypeId" class="form-label">📅 Employee Type</label>
+                            <select asp-for="SelectedEmployeeTypeId" asp-items="@(new SelectList(Model.EmployeeTypes, "Id", "Name"))" class="form-control">
+                                <option value="">All Employee Types</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="PageSize" class="form-label">📄 Items per Page</label>
+                            <select asp-for="PageSize" asp-items="@(new SelectList(pageSizeOptions))" class="form-control" onchange="this.form.submit();">
+                                <option value="">Select</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success w-100">Filter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="bg-primary text-white">
+                            <tr>
+                                <th>👤 Name</th>
+                                <th>📩 Email</th>
+                                <th>💼 Designation</th>
+                                <th>🖥️ Department</th>
+                                <th>⚧ Gender</th>
+                                <th>📅 Employee Type</th>
+                                <th class="text-center">⚙️ Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Employees != null && Model.Employees.Count > 0)
+                            {
+                                foreach (var employee in Model.Employees)
+                                {
+                                    <tr>
+                                        <td>@employee.FullName</td>
+                                        <td>@employee.Email</td>
+                                        <td>@employee.Designation?.Name</td>
+                                        <td>@employee.Department?.Name</td>
+                                        <td>@employee.Gender</td>
+                                        <td>@employee.EmployeeType?.Name</td>
+                                        <td class="text-center">
+                                            <a class="btn btn-sm btn-info" asp-controller="Employee" asp-action="Details" asp-route-id="@employee.Id" title="Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a class="btn btn-sm btn-warning" asp-controller="Employee" asp-action="Update" asp-route-id="@employee.Id" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a class="btn btn-sm btn-danger" asp-controller="Employee" asp-action="Delete" asp-route-id="@employee.Id" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">No employees found.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <nav aria-label="Employee List Pagination" class="mt-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <!-- Left side: Showing X-Y of total -->
+                    <div>
+                        @if (Model != null && Model.Employees != null && Model.Employees.Count > 0)
+                        {
+                            var start = ((Model.PageNumber - 1) * Model.PageSize) + 1;
+                            var end = start + Model.Employees.Count - 1;
+                            <span class="text-muted">Showing @start - @end of @Model.Total employees</span>
+                        }
+                    </div>
+
+                    <!-- Center: Page numbers with First / Last -->
+                    <ul class="pagination mb-0">
+                        @* First Page *@
+                        <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(1))">⏮️</a>
+                        </li>
+
+                        @* Previous Page *@
+                        <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.PageNumber - 1))">⬅️</a>
+                        </li>
+
+                        @* Page numbers in the middle (max 4) *@
+                        @{
+                            int maxPagesToShow = 4;
+                            int startPage = Math.Max(Model.PageNumber - 1, 1);
+                            int endPage = Math.Min(startPage + maxPagesToShow - 1, Model.TotalPages);
+                            if (endPage - startPage + 1 < maxPagesToShow)
+                            {
+                                startPage = Math.Max(endPage - maxPagesToShow + 1, 1);
+                            }
+                        }
+
+                        @for (int i = startPage; i <= endPage; i++)
+                        {
+                            if (i == Model.PageNumber)
+                            {
+                                <li class="page-item active"><span class="page-link">@i</span></li>
+                            }
+                            else
+                            {
+                                <li class="page-item"><a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(i))">@i</a></li>
+                            }
+                        }
+
+                        @* Next Page *@
+                        <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.PageNumber + 1))">➡️</a>
+                        </li>
+
+                        @* Last Page *@
+                        <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("List", "Employee", GetRouteValuesForPage(Model.TotalPages))">⏭️</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+
+
+
+
+        </div>
+    </div>
+</div>
+@functions {
+    private object GetRouteValuesForPage(int pageNumber)
+    {
+        return new
+        {
+            SearchTerm = Model.SearchTerm,
+            departmentId = Model.SelectedDepartmentId,
+            employeeTypeId = Model.SelectedEmployeeTypeId,
+            PageSize = Model.PageSize,
+            PageNumber = pageNumber
+        };
+    }
+}
