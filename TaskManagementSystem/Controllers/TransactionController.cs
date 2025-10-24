@@ -10,7 +10,6 @@ namespace TaskManagementSystem.Controllers
     public class TransactionController : Controller
     {
         private readonly ApplicationDbContext _context;
-
         private readonly IWebHostEnvironment _environment;
 
         public TransactionController(ApplicationDbContext context, IWebHostEnvironment environment)
@@ -88,8 +87,6 @@ namespace TaskManagementSystem.Controllers
             return View(transactions);
         }
 
-
-        // GET: Transaction/Create
         public async Task<IActionResult> Create()
         {
             var userName = HttpContext.Session.GetString("UserName");
@@ -101,7 +98,6 @@ namespace TaskManagementSystem.Controllers
             return View();
         }
 
-        // POST: Transaction/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Transaction model)
@@ -140,10 +136,6 @@ namespace TaskManagementSystem.Controllers
             return View(model);
         }
 
-
-
-
-        // 🟩 Edit GET
         public async Task<IActionResult> Edit(int id)
         {
             var item = await _context.Transactions.FindAsync(id);
@@ -151,7 +143,6 @@ namespace TaskManagementSystem.Controllers
             return View(item);
         }
 
-        // 🟩 Edit POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Transaction model)
@@ -178,7 +169,6 @@ namespace TaskManagementSystem.Controllers
             return View(model);
         }
 
-        // 🟩 Details
         public async Task<IActionResult> Details(int id)
         {
             var transaction = await _context.Transactions
@@ -191,8 +181,6 @@ namespace TaskManagementSystem.Controllers
             return View(transaction);
         }
 
-
-        // 🟩 Delete
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -205,7 +193,6 @@ namespace TaskManagementSystem.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
-
 
         [HttpGet]
         public async Task<IActionResult> TransactionReport(string? month, DateTime? from, DateTime? to, int? personId = null)
@@ -225,7 +212,7 @@ namespace TaskManagementSystem.Controllers
             if (personId.HasValue && personId.Value > 0)
                 transactions = transactions.Where(x => x.PersonId == personId.Value);
 
-            // 🔹 Date Range Filter (priority)
+            // 🔹 Date Range Filter
             if (from.HasValue || to.HasValue)
             {
                 if (from.HasValue)
@@ -233,7 +220,7 @@ namespace TaskManagementSystem.Controllers
                 if (to.HasValue)
                     transactions = transactions.Where(x => x.Date <= to.Value);
             }
-            else if (!string.IsNullOrEmpty(month)) // 🔹 Month filter
+            else if (!string.IsNullOrEmpty(month))
             {
                 if (DateTime.TryParse($"{month}-01", out var selectedMonth))
                 {
@@ -242,7 +229,7 @@ namespace TaskManagementSystem.Controllers
                     transactions = transactions.Where(x => x.Date >= monthStart && x.Date <= monthEnd);
                 }
             }
-            else // 🔹 Default: current month
+            else
             {
                 var currentMonth = DateTime.Now.Month;
                 var currentYear = DateTime.Now.Year;
@@ -256,7 +243,7 @@ namespace TaskManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // 🔹 Person-wise summary (Type-wise)
+            // 🔹 Summary Data
             var summaryData = transactionList
                 .GroupBy(x => new { x.PersonName, x.Type })
                 .Select(g => new
@@ -269,9 +256,33 @@ namespace TaskManagementSystem.Controllers
                 .ThenBy(x => x.Type)
                 .ToList();
 
-            // ── PDF Setup ──
+            decimal totalReceive = transactionList
+                .Where(x => !string.IsNullOrEmpty(x.Type) && x.Type.Trim().ToLower() == "received")
+                .Sum(x => x.Amount);
+
+            decimal totalGive = transactionList
+                .Where(x => !string.IsNullOrEmpty(x.Type) && x.Type.Trim().ToLower() == "given")
+                .Sum(x => x.Amount);
+
+            // 🔹 Net Give per person
+            var netGiveData = transactionList
+                .GroupBy(x => x.PersonName)
+                .Select(g =>
+                {
+                    decimal given = g.Where(x => x.Type?.Trim().ToLower() == "given").Sum(x => x.Amount);
+                    decimal received = g.Where(x => x.Type?.Trim().ToLower() == "received").Sum(x => x.Amount);
+                    return new
+                    {
+                        Person = g.Key ?? "-",
+                        NetGive = given - received
+                    };
+                })
+                .Where(x => x.NetGive != 0)
+                .ToList();
+
+            // ── PDF Setup (Portrait) ──
             using var ms = new MemoryStream();
-            var doc = new Document(PageSize.A4.Rotate(), 20f, 20f, 40f, 60f);
+            var doc = new Document(PageSize.A4, 20f, 20f, 40f, 60f); // Portrait
             var writer = PdfWriter.GetInstance(doc, ms);
             writer.PageEvent = new PdfFooter(userName);
             doc.Open();
@@ -350,6 +361,35 @@ namespace TaskManagementSystem.Controllers
 
             doc.Add(summaryTable);
 
+            // ── Total Receive & Give Table ──
+            var totalTable = new PdfPTable(2) { WidthPercentage = 40f, SpacingAfter = 15f, HorizontalAlignment = Element.ALIGN_LEFT };
+            totalTable.SetWidths(new float[] { 60f, 40f });
+
+            totalTable.AddCell(new PdfPCell(new Phrase("Total Receive", boldFont)) { Padding = 5f, BackgroundColor = BaseColor.LightGray });
+            totalTable.AddCell(new PdfPCell(new Phrase(totalReceive.ToString("0.00") + " ৳", normalFont)) { Padding = 5f, HorizontalAlignment = Element.ALIGN_RIGHT });
+
+            totalTable.AddCell(new PdfPCell(new Phrase("Total Give", boldFont)) { Padding = 5f, BackgroundColor = BaseColor.LightGray });
+            totalTable.AddCell(new PdfPCell(new Phrase(totalGive.ToString("0.00") + " ৳", normalFont)) { Padding = 5f, HorizontalAlignment = Element.ALIGN_RIGHT });
+
+            doc.Add(totalTable);
+
+            // ── Net Give Table ──
+            if (netGiveData.Any())
+            {
+                var netTable = new PdfPTable(2) { WidthPercentage = 50f, SpacingAfter = 15f, HorizontalAlignment = Element.ALIGN_LEFT };
+                netTable.SetWidths(new float[] { 60f, 40f });
+                netTable.AddCell(new PdfPCell(new Phrase("Person", boldFont)) { Padding = 5f, BackgroundColor = BaseColor.LightGray });
+                netTable.AddCell(new PdfPCell(new Phrase("Net Give (Given - Received)", boldFont)) { Padding = 5f, BackgroundColor = BaseColor.LightGray, HorizontalAlignment = Element.ALIGN_RIGHT });
+
+                foreach (var n in netGiveData)
+                {
+                    netTable.AddCell(new PdfPCell(new Phrase(n.Person, normalFont)) { Padding = 5f });
+                    netTable.AddCell(new PdfPCell(new Phrase(n.NetGive.ToString("0.00") + " ৳", normalFont)) { Padding = 5f, HorizontalAlignment = Element.ALIGN_RIGHT });
+                }
+
+                doc.Add(netTable);
+            }
+
             // ── Transaction Table ──
             var table = new PdfPTable(6) { WidthPercentage = 100f };
             table.SetWidths(new float[] { 5f, 20f, 20f, 25f, 15f, 15f });
@@ -407,9 +447,5 @@ namespace TaskManagementSystem.Controllers
                     document.PageSize.Width - document.RightMargin, yPos, 0);
             }
         }
-
-
-
-
     }
 }
