@@ -19,28 +19,33 @@ namespace TaskManagementSystem.Controllers
             _environment = environment;
         }
 
-        // 🟩 Index - with filters
-        public async Task<IActionResult> Index(string month, DateTime? from, DateTime? to, int page = 1)
+        [HttpGet]
+        public async Task<IActionResult> Index(string? month, DateTime? from, DateTime? to, int page = 1)
         {
             int pageSize = 10;
             var userName = HttpContext.Session.GetString("UserName");
 
+            // 🔹 Base Query
             var query = _context.Transactions
                 .Include(t => t.User)
+                .Include(t => t.Person)
                 .Where(t => !t.IsDeleted && t.CreatedByUserName == userName)
                 .AsQueryable();
 
+            // 🔹 Month Filter
             if (!string.IsNullOrEmpty(month))
             {
                 var monthDate = DateTime.Parse(month + "-01");
                 query = query.Where(t => t.Date.Month == monthDate.Month && t.Date.Year == monthDate.Year);
             }
 
+            // 🔹 Date Range Filter
             if (from.HasValue)
                 query = query.Where(t => t.Date >= from.Value);
             if (to.HasValue)
                 query = query.Where(t => t.Date <= to.Value);
 
+            // 🔹 Count + Pagination
             int totalRecords = await query.CountAsync();
             var transactions = await query
                 .OrderByDescending(t => t.Date)
@@ -48,6 +53,10 @@ namespace TaskManagementSystem.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
+            // 🔹 Total Amount (All filtered data)
+            var totalAmount = await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
+
+            // 🔹 ViewBag values
             ViewBag.SelectedMonth = month;
             ViewBag.FromDate = from?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = to?.ToString("yyyy-MM-dd");
@@ -55,22 +64,31 @@ namespace TaskManagementSystem.Controllers
             ViewBag.PageSize = pageSize;
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
-            ViewBag.TotalAmount = transactions.Sum(t => t.Amount);
+            ViewBag.TotalAmount = totalAmount;
 
             return View(transactions);
         }
 
-        // 🟩 Create GET
-        public IActionResult Create()
+
+        // GET: Transaction/Create
+        public async Task<IActionResult> Create()
         {
+            var userName = HttpContext.Session.GetString("UserName");
+            // শুধুমাত্র active & current user-এর Persons
+            ViewBag.Persons = await _context.Persons
+                                            .Where(p => !p.IsDeleted && p.CreatedByUserName == userName)
+                                            .ToListAsync();
+
             return View();
         }
+
+        // POST: Transaction/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Transaction model)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
-            var userName = HttpContext.Session.GetString("UserName"); // ✅ session থেকে নাম নেওয়া
+            var userName = HttpContext.Session.GetString("UserName");
 
             if (userId == null)
                 return RedirectToAction("Login", "Account");
@@ -79,8 +97,15 @@ namespace TaskManagementSystem.Controllers
             {
                 model.UserId = userId.Value;
                 model.CreatedAt = DateTime.Now;
-                model.CreatedByUserName = userName ?? "Unknown"; // ✅ এখন Session থেকে আসবে
+                model.CreatedByUserName = userName ?? "Unknown";
                 model.IsActive = true;
+
+                // PersonName optional set করা
+                if (model.PersonId > 0)
+                {
+                    var person = await _context.Persons.FindAsync(model.PersonId);
+                    model.PersonName = person?.Name;
+                }
 
                 _context.Add(model);
                 await _context.SaveChangesAsync();
@@ -88,8 +113,14 @@ namespace TaskManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Validation fail হলে dropdown আবার populate
+            ViewBag.Persons = await _context.Persons
+                                            .Where(p => !p.IsDeleted && p.CreatedByUserName == userName)
+                                            .ToListAsync();
+
             return View(model);
         }
+
 
 
 

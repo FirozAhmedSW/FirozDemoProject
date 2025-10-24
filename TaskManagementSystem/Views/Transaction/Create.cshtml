@@ -8,30 +8,56 @@
 
 <form asp-action="Create" method="post">
     <div class="mb-3">
-        <label class="form-label">Person Name</label>
-        <input asp-for="PersonName" class="form-control" />
-        <span asp-validation-for="PersonName" class="text-danger"></span>
+        <label class="form-label">Person</label>
+        <div class="d-flex gap-2">
+            <select asp-for="PersonId" class="form-select">
+                <option value="">-- Select Person --</option>
+                @if (ViewBag.Persons != null && ((List<TaskManagementSystem.Models.Person>)ViewBag.Persons).Any())
+                {
+                    foreach (var person in ViewBag.Persons)
+                    {
+                        <option value="@person.Id">@person.Name</option>
+                    }
+                }
+            </select>
+
+            @* 🔹 যদি কোন person না থাকে তাহলে Add Person button দেখাবে *@
+            @if (ViewBag.Persons == null || !((List<TaskManagementSystem.Models.Person>)ViewBag.Persons).Any())
+            {
+                <a asp-controller="Person" asp-action="Create" class="btn btn-outline-primary">Add Person</a>
+            }
+        </div>
+        <span asp-validation-for="PersonId" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label class="form-label">Type</label>
         <select asp-for="Type" class="form-select">
+            <option value="">-- Select Type --</option>
             <option value="Given">Given (তুমি টাকা দিয়েছো)</option>
             <option value="Received">Received (তুমি টাকা পেয়েছো)</option>
             <option value="Loan">Loan (ধার)</option>
         </select>
+        <span asp-validation-for="Type" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label class="form-label">Amount</label>
         <input asp-for="Amount" type="number" step="0.01" class="form-control" />
+        <span asp-validation-for="Amount" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label class="form-label">Date</label>
         <input asp-for="Date" type="date" class="form-control" />
+        <span asp-validation-for="Date" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label class="form-label">Description</label>
         <textarea asp-for="Description" class="form-control"></textarea>
     </div>
+
     <button type="submit" class="btn btn-success">Save</button>
     <a asp-action="Index" class="btn btn-secondary">Back</a>
 </form>
