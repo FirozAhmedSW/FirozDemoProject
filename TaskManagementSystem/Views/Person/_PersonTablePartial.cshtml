@@ -1,0 +1,57 @@
+﻿@model IEnumerable<TaskManagementSystem.Models.Person>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Created At</th>
+            <th>Is Active</th>
+            <th>Address</th>
+            <th>Mobile Number</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var person in Model)
+        {
+            <tr>
+                <td>@person.Name</td>
+                <td>@person.CreatedAt.ToString("yyyy-MM-dd")</td>
+                <td>@person.IsActive</td>
+                <td>@person.Address</td>
+                <td>@person.Phone</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@person.Id" class="btn btn-info btn-sm">Details</a>
+                    <a asp-action="Edit" asp-route-id="@person.Id" class="btn btn-warning btn-sm">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@person.Id" class="btn btn-danger btn-sm">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Pagination -->
+@{
+    int currentPage = ViewBag.CurrentPage;
+    int totalPages = ViewBag.TotalPages;
+    string searchString = ViewBag.SearchString;
+}
+
+<nav>
+    <ul class="pagination">
+        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+            <a href="#" class="page-link" data-page="@(currentPage - 1)">Previous</a>
+        </li>
+
+        @for (int i = 1; i <= totalPages; i++)
+        {
+            <li class="page-item @(i == currentPage ? "active" : "")">
+                <a href="#" class="page-link" data-page="@i">@i</a>
+            </li>
+        }
+
+        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+            <a href="#" class="page-link" data-page="@(currentPage + 1)">Next</a>
+        </li>
+    </ul>
+</nav>

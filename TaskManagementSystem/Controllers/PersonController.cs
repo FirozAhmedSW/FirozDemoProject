@@ -14,10 +14,39 @@ namespace TaskManagementSystem.Controllers
             _context = context;
         }
 
+        public async Task<IActionResult> Index(string searchString = "", int page = 1, int pageSize = 5)
+        {
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+
+            var query = _context.Persons
+                                .Where(p => !p.IsDeleted && p.CreatedByUserName == userName);
+
+            if (!string.IsNullOrWhiteSpace(searchString))
+                query = query.Where(p => p.Name.Contains(searchString));
+
+            var totalItems = await query.CountAsync();
+            var persons = await query
+                            .OrderByDescending(p => p.CreatedAt)
+                            .Skip((page - 1) * pageSize)
+                            .Take(pageSize)
+                            .ToListAsync();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+            ViewBag.SearchString = searchString;
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return PartialView("_PersonTablePartial", persons);
+
+            return View(persons);
+        }
+
+
+
         // GET: Person/Create
         public IActionResult Create()
         {
-            return View(); // ✅ শুধু একটি Person পাঠাচ্ছি, List নয়
+            return View();
         }
 
         // POST: Person/Create
@@ -36,22 +65,93 @@ namespace TaskManagementSystem.Controllers
                 _context.Persons.Add(model);
                 await _context.SaveChangesAsync();
 
-                // Transaction/Create এ redirect
-                return RedirectToAction("Create", "Transaction");
+                return RedirectToAction("Index");
             }
 
-            return View(model); // যদি validation fail হয়
+            return View(model);
         }
 
-        // GET: Person/Index
-        public async Task<IActionResult> Index()
+        // GET: Person/Details/5
+        public async Task<IActionResult> Details(int? id)
         {
-            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-            var persons = await _context.Persons
-                                        .Where(p => !p.IsDeleted && p.CreatedByUserName == userName)
-                                        .ToListAsync();
+            if (id == null)
+                return NotFound();
 
-            return View(persons); // ✅ Index view এর জন্য List<Person> পাঠানো হচ্ছে
+            var person = await _context.Persons
+                .FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted);
+
+            if (person == null)
+                return NotFound();
+
+            return View(person);
+        }
+
+        // GET: Person/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+                return NotFound();
+
+            var person = await _context.Persons.FindAsync(id);
+            if (person == null || person.IsDeleted)
+                return NotFound();
+
+            return View(person);
+        }
+
+        // POST: Person/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Person model)
+        {
+            if (id != model.Id)
+                return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                var person = await _context.Persons.FindAsync(id);
+                if (person == null || person.IsDeleted)
+                    return NotFound();
+
+                // শুধু Name, Address, Phone update
+                person.Name = model.Name;
+                person.Address = model.Address;
+                person.Phone = model.Phone;
+
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Index");
+            }
+            return View(model);
+        }
+
+
+        // GET: Person/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+                return NotFound();
+
+            var person = await _context.Persons
+                .FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted);
+
+            if (person == null)
+                return NotFound();
+
+            return View(person);
+        }
+
+        // POST: Person/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var person = await _context.Persons.FindAsync(id);
+            if (person != null)
+            {
+                person.IsDeleted = true; // Soft delete
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Index");
         }
     }
 }
