@@ -4,25 +4,59 @@
     ViewData["Title"] = "💰 Transaction Report";
 }
 
-<div class="">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="text-primary">Transaction Report</h2>
+<div class="maincontainer">
+
+    <!-- 🔹 Header with Add & PDF Button -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary mb-0">💰 Transaction Report</h2>
+
         <div class="d-flex gap-2">
-            <a asp-action="Create" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Add Transaction
+            <!-- Add Transaction Button -->
+            <a asp-action="Create" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Add
             </a>
-            <button type="submit" form="filterForm" formaction="@Url.Action("TransactionReport")" class="btn btn-success">
-                <i class="bi bi-file-earmark-pdf"></i> Generate PDF Report
-            </button>
+
+            <!-- Make Report Button -->
+            <form method="get" asp-action="TransactionReport" class="m-0">
+                <input type="hidden" name="personId" value="@ViewBag.SelectedPersonId" />
+                <input type="hidden" name="month" value="@ViewBag.SelectedMonth" />
+                <input type="hidden" name="from" value="@ViewBag.FromDate" />
+                <input type="hidden" name="to" value="@ViewBag.ToDate" />
+
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-file-earmark-pdf"></i> Make Report
+                </button>
+            </form>
         </div>
     </div>
 
     <!-- 🔹 Filter Section -->
     <form id="filterForm" method="get" asp-action="Index" class="row g-3 align-items-end mb-4">
+        <!-- Person Filter -->
+        <div class="col-md-3">
+            <label class="form-label">Select Person</label>
+            <select name="personId" class="form-select">
+                <option value="">-- All Persons --</option>
+                @if (ViewBag.Persons != null)
+                {
+                    int selectedId = ViewBag.SelectedPersonId != null ? Convert.ToInt32(ViewBag.SelectedPersonId) : 0;
+
+                    foreach (var p in (IEnumerable<TaskManagementSystem.Models.Person>)ViewBag.Persons)
+                    {
+                        bool isSelected = selectedId == p.Id;
+                        <option value="@p.Id" selected="@(isSelected ? "selected" : null)">@p.Name</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Month -->
         <div class="col-md-2">
             <label class="form-label">Select Month</label>
             <input type="month" name="month" class="form-control" value="@ViewBag.SelectedMonth" />
         </div>
+
+        <!-- Date Range -->
         <div class="col-md-2">
             <label class="form-label">From</label>
             <input type="date" name="from" class="form-control" value="@ViewBag.FromDate" />
@@ -31,9 +65,15 @@
             <label class="form-label">To</label>
             <input type="date" name="to" class="form-control" value="@ViewBag.ToDate" />
         </div>
-        <div class="col-md-6 d-flex gap-2">
-            <button type="submit" name="action" value="filter" class="btn btn-success flex-grow-1">Filter</button>
-            <a asp-action="Index" class="btn btn-secondary flex-grow-1">Reset</a>
+
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-success flex-grow-1">
+                <i class="bi bi-funnel"></i> Filter
+            </button>
+
+            <a asp-action="Index" class="btn btn-secondary flex-grow-1">
+                <i class="bi bi-arrow-clockwise"></i> Reset
+            </a>
         </div>
     </form>
 
@@ -47,13 +87,14 @@
                 <th>Description</th>
                 <th class="text-end">Amount</th>
                 <th>Added By</th>
-                <th>Action</th>
             </tr>
         </thead>
         <tbody>
             @if (!Model.Any())
             {
-                <tr><td colspan="7" class="text-center text-danger">No transactions found</td></tr>
+                <tr>
+                    <td colspan="6" class="text-center text-danger">No transactions found</td>
+                </tr>
             }
             else
             {
@@ -66,35 +107,18 @@
                         <td>@item.Description</td>
                         <td class="text-end">@item.Amount.ToString("0.00") ৳</td>
                         <td>@item.CreatedByUserName</td>
-                        <td>
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary"><i class="bi bi-pencil-square"></i></a>
-                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure?');">
-                                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
-                            </form>
-                        </td>
                     </tr>
                 }
             }
         </tbody>
     </table>
 
-    <!-- 🔹 Pagination & Summary -->
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>
-            @if (ViewBag.TotalRecords > 0)
-            {
-                var startRecord = ((int)ViewBag.CurrentPage - 1) * (int)ViewBag.PageSize + 1;
-                var endRecord = Math.Min(startRecord + (int)ViewBag.PageSize - 1, (int)ViewBag.TotalRecords);
-                <span>Total Records: @ViewBag.TotalRecords, Showing @startRecord – @endRecord</span>
-            }
-        </div>
-
-        <div class="fw-bold text-primary">
-            Total: @ViewBag.TotalAmount.ToString("0.00") ৳
-        </div>
+    <!-- 🔹 Summary -->
+    <div class="text-end mt-3 fw-bold text-primary">
+        Total: @ViewBag.TotalAmount.ToString("0.00") ৳
     </div>
 
-    <!-- 🔹 Pagination Links -->
+    <!-- 🔹 Pagination -->
     @if (ViewBag.TotalPages > 1)
     {
         <nav class="mt-3">
@@ -102,7 +126,13 @@
                 @for (int i = 1; i <= ViewBag.TotalPages; i++)
                 {
                     <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
-                        <a class="page-link" href="@Url.Action("Index", new { month = ViewBag.SelectedMonth, from = ViewBag.FromDate, to = ViewBag.ToDate, page = i })">@i</a>
+                        <a class="page-link" href="@Url.Action("Index", new {
+                            personId = ViewBag.SelectedPersonId,
+                            month = ViewBag.SelectedMonth,
+                            from = ViewBag.FromDate,
+                            to = ViewBag.ToDate,
+                            page = i
+                        })">@i</a>
                     </li>
                 }
             </ul>

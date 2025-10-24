@@ -20,46 +20,65 @@ namespace TaskManagementSystem.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(string? month, DateTime? from, DateTime? to, int page = 1)
+        public async Task<IActionResult> Index(string? month, DateTime? from, DateTime? to, int? personId = null, int page = 1)
         {
             int pageSize = 10;
             var userName = HttpContext.Session.GetString("UserName");
 
-            // 🔹 Base Query
+            if (string.IsNullOrEmpty(userName))
+                return RedirectToAction("Login", "Account"); // session check for safety
+
+            // 🔹 Person dropdown এর জন্য (soft-deleted বাদ দিয়ে)
+            ViewBag.Persons = await _context.Persons
+                .Where(p => !p.IsDeleted && p.CreatedByUserName == userName)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+
+            // 🔹 Base query
             var query = _context.Transactions
                 .Include(t => t.User)
                 .Include(t => t.Person)
                 .Where(t => !t.IsDeleted && t.CreatedByUserName == userName)
                 .AsQueryable();
 
+            // 🔹 Person Filter
+            if (personId.HasValue && personId.Value > 0)
+                query = query.Where(t => t.PersonId == personId.Value);
+
             // 🔹 Month Filter
             if (!string.IsNullOrEmpty(month))
             {
-                var monthDate = DateTime.Parse(month + "-01");
-                query = query.Where(t => t.Date.Month == monthDate.Month && t.Date.Year == monthDate.Year);
+                if (DateTime.TryParse(month + "-01", out DateTime monthDate))
+                {
+                    query = query.Where(t => t.Date.Month == monthDate.Month && t.Date.Year == monthDate.Year);
+                }
             }
 
             // 🔹 Date Range Filter
             if (from.HasValue)
                 query = query.Where(t => t.Date >= from.Value);
+
             if (to.HasValue)
                 query = query.Where(t => t.Date <= to.Value);
 
-            // 🔹 Count + Pagination
+            // 🔹 Total record count (for pagination)
             int totalRecords = await query.CountAsync();
+
+            // 🔹 Data pagination
             var transactions = await query
                 .OrderByDescending(t => t.Date)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            // 🔹 Total Amount (All filtered data)
+            // 🔹 Total amount (filtered data only)
             var totalAmount = await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
 
-            // 🔹 ViewBag values
+            // 🔹 ViewBag values (for pagination + filters)
             ViewBag.SelectedMonth = month;
             ViewBag.FromDate = from?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = to?.ToString("yyyy-MM-dd");
+            ViewBag.SelectedPersonId = personId ?? 0;
             ViewBag.TotalRecords = totalRecords;
             ViewBag.PageSize = pageSize;
             ViewBag.CurrentPage = page;
@@ -189,7 +208,7 @@ namespace TaskManagementSystem.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> TransactionReport(string? month, DateTime? from, DateTime? to)
+        public async Task<IActionResult> TransactionReport(string? month, DateTime? from, DateTime? to, int? personId = null)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown User";
@@ -197,12 +216,16 @@ namespace TaskManagementSystem.Controllers
             if (userId == null)
                 return RedirectToAction("Login", "Account");
 
-            // 🔹 User-wise filter
+            // 🔹 Base Query (User-wise)
             var transactions = _context.Transactions
                 .Where(x => !x.IsDeleted && x.UserId == userId)
                 .AsQueryable();
 
-            // 🔹 Filter by date range (priority)
+            // 🔹 Person Filter
+            if (personId.HasValue && personId.Value > 0)
+                transactions = transactions.Where(x => x.PersonId == personId.Value);
+
+            // 🔹 Date Range Filter (priority)
             if (from.HasValue || to.HasValue)
             {
                 if (from.HasValue)
@@ -210,7 +233,7 @@ namespace TaskManagementSystem.Controllers
                 if (to.HasValue)
                     transactions = transactions.Where(x => x.Date <= to.Value);
             }
-            else if (!string.IsNullOrEmpty(month)) // 🔹 Filter by month
+            else if (!string.IsNullOrEmpty(month)) // 🔹 Month filter
             {
                 if (DateTime.TryParse($"{month}-01", out var selectedMonth))
                 {
@@ -295,8 +318,13 @@ namespace TaskManagementSystem.Controllers
 
             // ── Subtitle / Filters ──
             var filterParts = new List<string>();
-            if (!string.IsNullOrEmpty(month)) filterParts.Add($"Month: {month}");
-            if (from.HasValue && to.HasValue) filterParts.Add($"Date: {from:dd-MMM-yyyy} to {to:dd-MMM-yyyy}");
+            if (personId.HasValue && personId > 0)
+                filterParts.Add($"Person: {transactionList.FirstOrDefault()?.PersonName ?? "-"}");
+            if (!string.IsNullOrEmpty(month))
+                filterParts.Add($"Month: {month}");
+            if (from.HasValue && to.HasValue)
+                filterParts.Add($"Date: {from:dd-MMM-yyyy} to {to:dd-MMM-yyyy}");
+
             var subtitleText = $"Total Transactions: {transactionList.Count}" +
                                (filterParts.Count > 0 ? $" (Filters – {string.Join(", ", filterParts)})" : "");
             var subtitle = new Paragraph(subtitleText, normalFont)
@@ -322,7 +350,7 @@ namespace TaskManagementSystem.Controllers
 
             doc.Add(summaryTable);
 
-            // ── Transaction Table (Optional, full listing) ──
+            // ── Transaction Table ──
             var table = new PdfPTable(6) { WidthPercentage = 100f };
             table.SetWidths(new float[] { 5f, 20f, 20f, 25f, 15f, 15f });
             string[] headers = { "SL", "Date", "Person", "Description", "Amount", "Type" };
@@ -379,6 +407,7 @@ namespace TaskManagementSystem.Controllers
                     document.PageSize.Width - document.RightMargin, yPos, 0);
             }
         }
+
 
 
 
