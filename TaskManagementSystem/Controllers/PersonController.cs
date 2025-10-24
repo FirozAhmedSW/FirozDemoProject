@@ -124,34 +124,44 @@ namespace TaskManagementSystem.Controllers
             return View(model);
         }
 
-
-        // GET: Person/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateAjax([FromForm] Person model)
         {
-            if (id == null)
-                return NotFound();
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
 
-            var person = await _context.Persons
-                .FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted);
+            if (string.IsNullOrWhiteSpace(model.Name))
+                return BadRequest("Name is required");
 
-            if (person == null)
-                return NotFound();
+            model.CreatedAt = DateTime.Now;
+            model.IsActive = true;
+            model.CreatedByUserName = userName;
 
-            return View(person);
+            _context.Persons.Add(model);
+            await _context.SaveChangesAsync();
+
+            return Json(new { id = model.Id, name = model.Name });
         }
 
-        // POST: Person/Delete/5
-        [HttpPost, ActionName("Delete")]
+
+
+        // POST: Person/Delete/5 (soft delete)
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             var person = await _context.Persons.FindAsync(id);
-            if (person != null)
+            if (person != null && !person.IsDeleted)
             {
                 person.IsDeleted = true; // Soft delete
                 await _context.SaveChangesAsync();
             }
+
             return RedirectToAction("Index");
         }
+
+
+
+
     }
 }

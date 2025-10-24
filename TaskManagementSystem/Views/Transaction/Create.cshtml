@@ -3,6 +3,13 @@
 @{
     ViewData["Title"] = "Add Transaction";
 }
+<style>
+    .addperson{
+        height: 41px;
+        width: 157px;
+    }
+</style>
+
 
 <h2 class="text-primary mb-3">Add Transaction</h2>
 
@@ -21,7 +28,7 @@
                 }
             </select>
 
-            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
+            <button type="button" class="addperson btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
                 Add Person
             </button>
         </div>
@@ -65,6 +72,8 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="addPersonForm">
+                @* Anti-forgery token *@
+                @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h5 class="modal-title" id="addPersonModalLabel">Add Person</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -92,11 +101,16 @@
     </div>
 </div>
 
+
 @section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function(){
-            $("#addPersonForm").submit(function(e){
+        $(document).ready(function() {
+
+            $("#addPersonForm").submit(function(e) {
                 e.preventDefault();
+
+                var token = $('input[name="__RequestVerificationToken"]').val(); // Anti-forgery token
 
                 var personData = {
                     Name: $("#PersonName").val(),
@@ -107,10 +121,15 @@
                 $.ajax({
                     url: '@Url.Action("CreateAjax", "Person")',
                     type: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
                     data: personData,
-                    success: function(result){
-                        // Close modal
-                        $("#addPersonModal").modal('hide');
+                    success: function(result) {
+                        // Close modal using Bootstrap 5 JS API
+                        var modalEl = document.getElementById('addPersonModal');
+                        var modal = bootstrap.Modal.getInstance(modalEl);
+                        modal.hide();
 
                         // Clear input
                         $("#PersonName, #PersonAddress, #PersonPhone").val('');
@@ -123,11 +142,14 @@
                         });
                         $("#PersonId").append(newOption);
                     },
-                    error: function(){
+                    error: function(err){
                         alert("Error adding person.");
+                        console.log(err);
                     }
                 });
             });
+
         });
     </script>
 }
+
