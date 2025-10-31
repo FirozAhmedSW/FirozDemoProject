@@ -1,0 +1,41 @@
+﻿@model IEnumerable<TaskManagementSystem.Models.Permission.RoleMenuPermission>
+
+@{
+    ViewData["Title"] = "Role Menu Permissions";
+}
+
+<h2>Role Menu Permissions</h2>
+<p>
+    <a asp-action="Create" class="btn btn-primary">Add New Permission</a>
+</p>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Role</th>
+            <th>Menu</th>
+            <th>Can View</th>
+            <th>Can Create</th>
+            <th>Can Edit</th>
+            <th>Can Delete</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Role?.Name</td>
+                <td>@item.Menu?.Title</td>
+                <td>@(item.CanView ? "Yes" : "No")</td>
+                <td>@(item.CanCreate ? "Yes" : "No")</td>
+                <td>@(item.CanEdit ? "Yes" : "No")</td>
+                <td>@(item.CanDelete ? "Yes" : "No")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

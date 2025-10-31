@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using TaskManagementSystem.Models;
+using TaskManagementSystem.Models.Permission;
 
 namespace TaskManagementSystem.DataContext
 {
@@ -22,6 +23,11 @@ namespace TaskManagementSystem.DataContext
         public DbSet<Expense> Expenses { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Person> Persons { get; set; }
+        public DbSet<Menu> Menus { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<RoleMenuPermission> RoleMenuPermissions { get; set; }
+
 
 
 

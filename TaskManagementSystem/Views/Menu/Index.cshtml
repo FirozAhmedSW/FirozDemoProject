@@ -1,0 +1,41 @@
+﻿@model IEnumerable<TaskManagementSystem.Models.Permission.Menu>
+
+@{
+    ViewData["Title"] = "Menus";
+}
+
+<h2>Menus</h2>
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Menu</a>
+</p>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Parent Menu</th>
+            <th>Controller</th>
+            <th>Action</th>
+            <th>Display Order</th>
+            <th>Is Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var menu in Model)
+        {
+            <tr>
+                <td>@menu.Title</td>
+                <td>@menu.Parent?.Title</td>
+                <td>@menu.ControllerName</td>
+                <td>@menu.ActionName</td>
+                <td>@menu.DisplayOrder</td>
+                <td>@(menu.IsActive ? "Yes" : "No")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@menu.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@menu.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
