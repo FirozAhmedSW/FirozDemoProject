@@ -1,58 +1,82 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.Permission.RoleMenuPermission>
-
 @{
-    ViewData["Title"] = "Role Menu Permissions";
+    ViewData["Title"] = "User Menu Permissions";
+    var selectedUserId = ViewBag.SelectedUserId as int?;
+    var selectedUserRole = ViewBag.SelectedUserRole as string;
 }
 
-<h2 class="mb-3">Role Menu Permissions</h2>
+<h2 class="mb-3">User Menu Permissions</h2>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Add New Permission</a>
-</p>
+<!-- 🔹 User Dropdown + Add Permission Button -->
+<form method="get" asp-action="Index" class="mb-3 d-flex align-items-center gap-3">
+    <div>
+        <label for="userId" class="form-label fw-bold">Select User:</label>
+        <select id="userId" name="userId" class="form-select d-inline w-auto" onchange="this.form.submit()">
+            <option value="">-- Select User --</option>
+            @foreach (var user in ViewBag.Users)
+            {
+                <option value="@user.Id" selected>
+                    @user.UserName
+                </option>
+            }
+        </select>
+    </div>
 
-<table class="table table-bordered table-striped table-hover">
-    <thead class="table-dark">
-        <tr>
-            <th>Role</th>
-            <th>Menu</th>
-            <th class="text-center">Can View</th>
-            <th class="text-center">Can Create</th>
-            <th class="text-center">Can Edit</th>
-            <th class="text-center">Can Delete</th>
-            <th class="text-center">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.Role.Name</td>
-                <td>@item.Menu.Title</td>
-                <td class="text-center">
-                    <span class="badge @(item.CanView ? "bg-success" : "bg-danger")">
-                        @(item.CanView ? "Yes" : "No")
-                    </span>
-                </td>
-                <td class="text-center">
-                    <span class="badge @(item.CanCreate ? "bg-success" : "bg-danger")">
-                        @(item.CanCreate ? "Yes" : "No")
-                    </span>
-                </td>
-                <td class="text-center">
-                    <span class="badge @(item.CanEdit ? "bg-success" : "bg-danger")">
-                        @(item.CanEdit ? "Yes" : "No")
-                    </span>
-                </td>
-                <td class="text-center">
-                    <span class="badge @(item.CanDelete ? "bg-success" : "bg-danger")">
-                        @(item.CanDelete ? "Yes" : "No")
-                    </span>
-                </td>
-                <td class="text-center">
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning me-1">Edit</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+        <div class="alert alert-info m-0">
+            <strong>Role:</strong> @selectedUserRole
+        </div>
+    
+        <a method="post" asp-action="Create" class="btn btn-primary ms-3">
+            <i class="bi bi-plus-circle"></i> Add Permission
+        </a>
+   
+</form>
+<form method="post" asp-action="UpdatePermissions">
+        <input type="hidden" name="userId" value="@selectedUserId" />
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <table class="table table-bordered table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Menu</th>
+                            <th class="text-center">Can View</th>
+                            <th class="text-center">Can Create</th>
+                            <th class="text-center">Can Edit</th>
+                            <th class="text-center">Can Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Count(); i++)
+                        {
+                            var item = Model.ElementAt(i);
+                            <tr>
+                                <td>
+                                    @item.Menu?.Title
+                                    <input type="hidden" name="Permissions[@i].Id" value="@item.Id" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="Permissions[@i].CanView" value="true" @(item.CanView ? "checked" : "") />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="Permissions[@i].CanCreate" value="true" @(item.CanCreate ? "checked" : "") />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="Permissions[@i].CanEdit" value="true" @(item.CanEdit ? "checked" : "") />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="Permissions[@i].CanDelete" value="true" @(item.CanDelete ? "checked" : "") />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="text-end mt-3">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+

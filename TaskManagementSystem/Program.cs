@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Rotativa.AspNetCore;
 using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Services;
+using TaskManagementSystem.Helpers;
 
 namespace EmployeePortal
 {
@@ -24,6 +25,8 @@ namespace EmployeePortal
             builder.Services.AddScoped<EmployeeService>();
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ActivityLogger>();
+            builder.Services.AddScoped<PermissionHelper>();
+
 
 
             // 4️⃣ Configure Session
