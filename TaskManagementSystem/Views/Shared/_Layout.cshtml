@@ -2,6 +2,7 @@
     EmployeePortal layout with left sidebar, topbar, dropdown, and sticky footer
 *@
 @using TaskManagementSystem.Models
+@using Microsoft.EntityFrameworkCore
 @inject TaskManagementSystem.DataContext.ApplicationDbContext _context
 @{
     var userName = Context.Session.GetString("UserName");
@@ -51,18 +52,18 @@
         .sidebar {
             min-width: 200px;
             max-width: 239px;
-            background-color:#040403;
+            background-color: #040403;
             color: #fff;
             min-height: 100vh;
         }
 
-        .sidebar .nav-link {
-            color: #fff;
-        }
+            .sidebar .nav-link {
+                color: #fff;
+            }
 
-        .sidebar .nav-link.active {
-            background-color: #3b5998;
-        }
+                .sidebar .nav-link.active {
+                    background-color: #3b5998;
+                }
 
         .main-content {
             flex: 1;
@@ -112,48 +113,37 @@
                 <h4 class="text-center mb-4 fw-bold">Task Management</h4>
 
                 <ul class="nav nav-pills flex-column mb-auto">
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home") ? "active" : "")"
-                           asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "List") ? "active" : "")"
-                           asp-area="" asp-controller="Employee" asp-action="List">Employee List</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" && ViewContext.RouteData.Values["action"]?.ToString() == "Create") ? "active" : "")"
-                           asp-area="" asp-controller="Employee" asp-action="Create">Add Employee</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                           asp-area="" asp-controller="Account" asp-action="Index">User Info</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Task" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                           asp-area="" asp-controller="Task" asp-action="Index">Daily Task</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "ActivityLogs" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                           asp-area="" asp-controller="ActivityLogs" asp-action="Index">ActivityLogs Info</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Expense" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                           asp-area="" asp-controller="Expense" asp-action="Index">Expense Info</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Game" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                           asp-area="" asp-controller="Game" asp-action="Index">Play 🎮 Games for fun</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Transaction" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                           asp-area="" asp-controller="Transaction" asp-action="Index">Transaction info</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Person" && ViewContext.RouteData.Values["action"]?.ToString() == "Index") ? "active" : "")"
-                           asp-area="" asp-controller="Person" asp-action="Index">Clint info</a>
-                    </li>
+                    @{
+                        var userId = Context.Session.GetInt32("UserId") ?? 0;
 
+                        if (userId > 0)
+                        {
+                            // Get roles of the current user
+                            var userRoles = _context.UserRoles
+                            .Where(ur => ur.UserId == userId && !ur.IsDeleted && ur.IsActive)
+                            .Select(ur => ur.RoleId)
+                            .ToList();
 
+                            // Get menus allowed for the user
+                            var menus = _context.RoleMenuPermissions.Include(rmp => rmp.Menu)
+                            .Where(rmp => userRoles.Contains(rmp.RoleId) && rmp.CanView && !rmp.IsDeleted && rmp.IsActive && !rmp.Menu.IsDeleted && rmp.Menu.IsActive)
+                            .Select(rmp => rmp.Menu).OrderBy(m => m.DisplayOrder).ToList();
+
+                            foreach (var menu in menus)
+                            {
+                             <li class="nav-item">
+                              <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == menu.ControllerName && ViewContext.RouteData.Values["action"]?.ToString() == menu.ActionName) ? "active" : "")"
+                                asp-area="" asp-controller="@menu.ControllerName" asp-action="@menu.ActionName">
+                                        @if (!string.IsNullOrEmpty(menu.Icon))
+                                        {
+                                            <i class="@menu.Icon me-2"></i>
+                                        }
+                                        @menu.Title
+                               </a>
+                             </li>
+                            }
+                        }
+                    }
                 </ul>
             </nav>
 

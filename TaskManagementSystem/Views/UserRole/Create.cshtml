@@ -1,0 +1,44 @@
+﻿@{
+    ViewData["Title"] = "Assign Role to User";
+    var users = ViewBag.Users as List<TaskManagementSystem.Models.User>;
+    var roles = ViewBag.Roles as List<TaskManagementSystem.Models.Permission.Role>;
+}
+
+<h2>Assign Role to User</h2>
+
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <label for="UserId" class="form-label">Select User</label>
+        <select class="form-select" id="UserId" name="UserId" required>
+            <option value="">-- Select User --</option>
+            @foreach (var u in users)
+            {
+                <option value="@u.Id">@u.UserName</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="RoleId" class="form-label">Select Role</label>
+        <select class="form-select" id="RoleId" name="RoleId" required>
+            <option value="">-- Select Role --</option>
+            @foreach (var r in roles)
+            {
+                <option value="@r.Id">@r.Name</option>
+            }
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Assign Role</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger mt-3">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <p>@error.ErrorMessage</p>
+        }
+    </div>
+}
