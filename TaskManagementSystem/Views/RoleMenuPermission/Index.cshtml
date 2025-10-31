@@ -4,35 +4,52 @@
     ViewData["Title"] = "Role Menu Permissions";
 }
 
-<h2>Role Menu Permissions</h2>
+<h2 class="mb-3">Role Menu Permissions</h2>
+
 <p>
     <a asp-action="Create" class="btn btn-primary">Add New Permission</a>
 </p>
 
-<table class="table table-bordered table-striped">
-    <thead>
+<table class="table table-bordered table-striped table-hover">
+    <thead class="table-dark">
         <tr>
             <th>Role</th>
             <th>Menu</th>
-            <th>Can View</th>
-            <th>Can Create</th>
-            <th>Can Edit</th>
-            <th>Can Delete</th>
-            <th>Actions</th>
+            <th class="text-center">Can View</th>
+            <th class="text-center">Can Create</th>
+            <th class="text-center">Can Edit</th>
+            <th class="text-center">Can Delete</th>
+            <th class="text-center">Actions</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
             <tr>
-                <td>@item.Role?.Name</td>
-                <td>@item.Menu?.Title</td>
-                <td>@(item.CanView ? "Yes" : "No")</td>
-                <td>@(item.CanCreate ? "Yes" : "No")</td>
-                <td>@(item.CanEdit ? "Yes" : "No")</td>
-                <td>@(item.CanDelete ? "Yes" : "No")</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                <td>@item.Role.Name</td>
+                <td>@item.Menu.Title</td>
+                <td class="text-center">
+                    <span class="badge @(item.CanView ? "bg-success" : "bg-danger")">
+                        @(item.CanView ? "Yes" : "No")
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge @(item.CanCreate ? "bg-success" : "bg-danger")">
+                        @(item.CanCreate ? "Yes" : "No")
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge @(item.CanEdit ? "bg-success" : "bg-danger")">
+                        @(item.CanEdit ? "Yes" : "No")
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge @(item.CanDelete ? "bg-success" : "bg-danger")">
+                        @(item.CanDelete ? "Yes" : "No")
+                    </span>
+                </td>
+                <td class="text-center">
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning me-1">Edit</a>
                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
                 </td>
             </tr>

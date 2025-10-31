@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TaskManagementSystem.Models; // Your DbContext namespace
+using TaskManagementSystem.Models;
 using TaskManagementSystem.DataContext;
-using TaskManagementSystem.Models.Permission; // Menu model namespace
+using TaskManagementSystem.Models.Permission;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -19,16 +19,25 @@ namespace TaskManagementSystem.Controllers
         public async Task<IActionResult> Index()
         {
             var menus = await _context.Menus
-                .Include(m => m.Parent)
-                .OrderBy(m => m.DisplayOrder)
                 .ToListAsync();
+
+            // Optionally, load parent title for display
+            var menuList = menus.Select(m => new
+            {
+                m.Id,
+                m.Title,
+                ParentTitle = menus.FirstOrDefault(p => p.Id == m.ParentId)?.Title
+            }).ToList();
+
+            ViewBag.MenuParents = menuList;
+
             return View(menus);
         }
 
         // GET: Menu/Create
         public IActionResult Create()
         {
-            ViewBag.Parents = _context.Menus.Where(m => m.ParentId == null).ToList();
+            LoadParentMenus();
             return View();
         }
 
@@ -39,11 +48,17 @@ namespace TaskManagementSystem.Controllers
         {
             if (ModelState.IsValid)
             {
+                menu.CreatedAt = DateTime.Now;
+                menu.IsActive = true;
+                menu.IsDeleted = false;
+                menu.ParentId = 1;
+
                 _context.Add(menu);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Parents = _context.Menus.Where(m => m.ParentId == null).ToList();
+
+            LoadParentMenus();
             return View(menu);
         }
 
@@ -55,7 +70,7 @@ namespace TaskManagementSystem.Controllers
             var menu = await _context.Menus.FindAsync(id);
             if (menu == null) return NotFound();
 
-            ViewBag.Parents = _context.Menus.Where(m => m.ParentId == null && m.Id != id).ToList();
+            LoadParentMenus(menu.Id);
             return View(menu);
         }
 
@@ -68,12 +83,25 @@ namespace TaskManagementSystem.Controllers
 
             if (ModelState.IsValid)
             {
-                _context.Update(menu);
-                await _context.SaveChangesAsync();
+                try
+                {
+                    menu.UpdatedAt = DateTime.Now;
+                    menu.IsActive = true;
+                    menu.ParentId = 1;
+                    _context.Update(menu);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!MenuExists(menu.Id))
+                        return NotFound();
+                    else
+                        throw;
+                }
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Parents = _context.Menus.Where(m => m.ParentId == null && m.Id != id).ToList();
+            LoadParentMenus(menu.Id);
             return View(menu);
         }
 
@@ -82,9 +110,7 @@ namespace TaskManagementSystem.Controllers
         {
             if (id == null) return NotFound();
 
-            var menu = await _context.Menus
-                .Include(m => m.Parent)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var menu = await _context.Menus.FindAsync(id);
             if (menu == null) return NotFound();
 
             return View(menu);
@@ -102,6 +128,23 @@ namespace TaskManagementSystem.Controllers
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        // Helper methods
+        private void LoadParentMenus(int? excludeId = null)
+        {
+            var parents = _context.Menus
+                .Where(m => m.ParentId == null);
+
+            if (excludeId.HasValue)
+                parents = parents.Where(m => m.Id != excludeId.Value);
+
+            ViewBag.Parents = parents.ToList();
+        }
+
+        private bool MenuExists(int id)
+        {
+            return _context.Menus.Any(e => e.Id == id);
         }
     }
 }

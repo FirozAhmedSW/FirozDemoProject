@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using TaskManagementSystem.Models;
-using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models.Permission;
+using TaskManagementSystem.DataContext;
+using TaskManagementSystem.Models;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -25,14 +25,14 @@ namespace TaskManagementSystem.Controllers
                 .OrderBy(rmp => rmp.RoleId)
                 .ThenBy(rmp => rmp.MenuId)
                 .ToListAsync();
+
             return View(permissions);
         }
 
         // GET: RoleMenuPermission/Create
         public IActionResult Create()
         {
-            ViewBag.Roles = new SelectList(_context.Roles.Where(r => r.IsActive), "Id", "Name");
-            ViewBag.Menus = new SelectList(_context.Menus.Where(m => m.IsActive), "Id", "Title");
+            LoadDropdowns();
             return View();
         }
 
@@ -46,21 +46,24 @@ namespace TaskManagementSystem.Controllers
                 // Check if already exists
                 var exists = await _context.RoleMenuPermissions
                     .AnyAsync(rmp => rmp.RoleId == permission.RoleId && rmp.MenuId == permission.MenuId);
+
                 if (exists)
                 {
                     ModelState.AddModelError("", "Permission already exists for this role and menu.");
-                    ViewBag.Roles = new SelectList(_context.Roles.Where(r => r.IsActive), "Id", "Name");
-                    ViewBag.Menus = new SelectList(_context.Menus.Where(m => m.IsActive), "Id", "Title");
+                    LoadDropdowns(permission.RoleId, permission.MenuId);
                     return View(permission);
                 }
+
+                permission.IsActive = true;
+                permission.IsDeleted = false;
+                permission.CreatedAt = DateTime.Now;
 
                 _context.Add(permission);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Roles = new SelectList(_context.Roles.Where(r => r.IsActive), "Id", "Name");
-            ViewBag.Menus = new SelectList(_context.Menus.Where(m => m.IsActive), "Id", "Title");
+            LoadDropdowns(permission.RoleId, permission.MenuId);
             return View(permission);
         }
 
@@ -72,8 +75,7 @@ namespace TaskManagementSystem.Controllers
             var permission = await _context.RoleMenuPermissions.FindAsync(id);
             if (permission == null) return NotFound();
 
-            ViewBag.Roles = new SelectList(_context.Roles.Where(r => r.IsActive), "Id", "Name", permission.RoleId);
-            ViewBag.Menus = new SelectList(_context.Menus.Where(m => m.IsActive), "Id", "Title", permission.MenuId);
+            LoadDropdowns(permission.RoleId, permission.MenuId);
             return View(permission);
         }
 
@@ -86,13 +88,13 @@ namespace TaskManagementSystem.Controllers
 
             if (ModelState.IsValid)
             {
+                permission.UpdatedAt = DateTime.Now;
                 _context.Update(permission);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Roles = new SelectList(_context.Roles.Where(r => r.IsActive), "Id", "Name", permission.RoleId);
-            ViewBag.Menus = new SelectList(_context.Menus.Where(m => m.IsActive), "Id", "Title", permission.MenuId);
+            LoadDropdowns(permission.RoleId, permission.MenuId);
             return View(permission);
         }
 
@@ -123,6 +125,13 @@ namespace TaskManagementSystem.Controllers
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        // Helper
+        private void LoadDropdowns(int? selectedRoleId = null, int? selectedMenuId = null)
+        {
+            ViewBag.Roles = new SelectList(_context.Roles.Where(r => r.IsActive), "Id", "Name", selectedRoleId);
+            ViewBag.Menus = new SelectList(_context.Menus.Where(m => m.IsActive), "Id", "Title", selectedMenuId);
         }
     }
 }

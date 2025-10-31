@@ -3,23 +3,50 @@
 *@
 @using TaskManagementSystem.Models
 @using Microsoft.EntityFrameworkCore
+@using TaskManagementSystem.Models.Permission
 @inject TaskManagementSystem.DataContext.ApplicationDbContext _context
 @{
+    // Session theke user info
     var userName = Context.Session.GetString("UserName");
     string userPhoto = "/images/default-avatar.jpg"; // default fallback
+    int? userId = Context.Session.GetInt32("UserId");
 
-    if (!string.IsNullOrEmpty(userName))
+    int? userRoleId = null;
+
+    if (!string.IsNullOrEmpty(userName) && userId != null)
     {
-        var userId = Context.Session.GetInt32("UserId");
-        if (userId != null)
+        var currentUser = _context.Users.Include(u => u.Role).FirstOrDefault(u => u.Id == userId.Value && !u.IsDeleted && u.IsActive);
+
+        if (currentUser != null)
         {
-            var currentUser = _context.Users.FirstOrDefault(u => u.Id == userId.Value && !u.IsDeleted);
-            if (currentUser != null && !string.IsNullOrEmpty(currentUser.PhotoPath))
+            userRoleId = currentUser.RoleId;
+
+            if (!string.IsNullOrEmpty(currentUser.PhotoPath))
             {
                 userPhoto = currentUser.PhotoPath;
             }
         }
     }
+
+    // Role er menu fetch kora
+    var menus = new List<Menu>();
+    if (userRoleId != null)
+    {
+        menus = _context.RoleMenuPermissions
+            .Include(rmp => rmp.Menu)   // navigation property
+            .Where(rmp => rmp.RoleId == userRoleId.Value
+                          && rmp.CanView
+                          && !rmp.IsDeleted
+                          && rmp.IsActive
+                          && rmp.Menu != null
+                          && !rmp.Menu.IsDeleted
+                          && rmp.Menu.IsActive)
+            .Select(rmp => rmp.Menu!)
+            .Distinct()
+            .ToList();
+    }
+
+
 }
 
 <!DOCTYPE html>
@@ -31,7 +58,6 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/EmployeePortal.styles.css" asp-append-version="true" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
     <style>
         html, body {
@@ -49,9 +75,10 @@
             flex: 1 0 auto;
         }
 
+        /* Sidebar */
         .sidebar {
             min-width: 200px;
-            max-width: 239px;
+            max-width: 240px;
             background-color: #040403;
             color: #fff;
             min-height: 100vh;
@@ -63,8 +90,14 @@
 
                 .sidebar .nav-link.active {
                     background-color: #3b5998;
+                    font-weight: bold;
                 }
 
+            .sidebar h4 {
+                color: #fff;
+            }
+
+        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
@@ -74,7 +107,11 @@
         .topbar {
             background-color: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
-            padding: 0px 20px;
+            padding: 0 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .content-wrapper {
@@ -82,6 +119,7 @@
             padding: 20px;
         }
 
+        /* Footer */
         footer {
             background-color: #0dcaf0;
             color: black;
@@ -90,10 +128,12 @@
             flex-shrink: 0;
         }
 
+        /* User Avatar */
         .user-avatar {
             width: 36px;
             height: 36px;
             object-fit: cover;
+            border-radius: 50%;
             border: 2px solid #fff;
             box-shadow: 0 0 6px rgba(0,0,0,0.3);
         }
@@ -111,38 +151,15 @@
             <!-- Sidebar -->
             <nav class="sidebar d-flex flex-column p-3">
                 <h4 class="text-center mb-4 fw-bold">Task Management</h4>
-
                 <ul class="nav nav-pills flex-column mb-auto">
-                    @{
-                        var userId = Context.Session.GetInt32("UserId") ?? 0;
-
-                        if (userId > 0)
-                        {
-                            // Get roles of the current user
-                            var userRoles = _context.UserRoles
-                            .Where(ur => ur.UserId == userId && !ur.IsDeleted && ur.IsActive)
-                            .Select(ur => ur.RoleId)
-                            .ToList();
-
-                            // Get menus allowed for the user
-                            var menus = _context.RoleMenuPermissions.Include(rmp => rmp.Menu)
-                            .Where(rmp => userRoles.Contains(rmp.RoleId) && rmp.CanView && !rmp.IsDeleted && rmp.IsActive && !rmp.Menu.IsDeleted && rmp.Menu.IsActive)
-                            .Select(rmp => rmp.Menu).OrderBy(m => m.DisplayOrder).ToList();
-
-                            foreach (var menu in menus)
-                            {
-                             <li class="nav-item">
-                              <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == menu.ControllerName && ViewContext.RouteData.Values["action"]?.ToString() == menu.ActionName) ? "active" : "")"
-                                asp-area="" asp-controller="@menu.ControllerName" asp-action="@menu.ActionName">
-                                        @if (!string.IsNullOrEmpty(menu.Icon))
-                                        {
-                                            <i class="@menu.Icon me-2"></i>
-                                        }
-                                        @menu.Title
-                               </a>
-                             </li>
-                            }
-                        }
+                    @foreach (var menu in menus)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == menu.ControllerName ? "active" : "")"
+                               asp-area="" asp-controller="@menu.ControllerName" asp-action="@menu.ActionName">
+                                @menu.Title
+                            </a>
+                        </li>
                     }
                 </ul>
             </nav>
@@ -150,12 +167,12 @@
             <!-- Main content -->
             <div class="main-content">
                 <!-- Topbar -->
-                <div class="topbar d-flex bg-info justify-content-between align-items-center">
-                    <h5 class="mb-0">@ViewData["Title"]</h5>
+                <div class="topbar bg-info">
+                    <h5 class="mb-0 text-dark">@ViewData["Title"]</h5>
                     <ul class="navbar-nav flex-row align-items-center m-0 p-0 list-unstyled">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <img src="@userPhoto" alt="User Avatar" class="rounded-circle me-2 user-avatar" />
+                                <img src="@userPhoto" alt="User Avatar" class="user-avatar me-2" />
                                 <span class="fw-semibold d-none d-lg-inline">@userName</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">

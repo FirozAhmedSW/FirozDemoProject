@@ -4,21 +4,21 @@
     ViewData["Title"] = "Menus";
 }
 
-<h2>Menus</h2>
+<h2 class="mb-3">Menus</h2>
+
 <p>
     <a asp-action="Create" class="btn btn-primary">Create New Menu</a>
 </p>
 
-<table class="table table-bordered table-striped">
-    <thead>
+<table class="table table-bordered table-striped table-hover">
+    <thead class="table-dark">
         <tr>
             <th>Title</th>
             <th>Parent Menu</th>
             <th>Controller</th>
             <th>Action</th>
-            <th>Display Order</th>
-            <th>Is Active</th>
-            <th>Actions</th>
+            <th class="text-center">Is Active</th>
+            <th class="text-center">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -26,13 +26,21 @@
         {
             <tr>
                 <td>@menu.Title</td>
-                <td>@menu.Parent?.Title</td>
+                <td>@(menu.ParentId != null)</td>
                 <td>@menu.ControllerName</td>
                 <td>@menu.ActionName</td>
-                <td>@menu.DisplayOrder</td>
-                <td>@(menu.IsActive ? "Yes" : "No")</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@menu.Id" class="btn btn-sm btn-warning">Edit</a>
+                <td class="text-center">
+                    @if (menu.IsActive)
+                    {
+                        <span class="badge bg-success">Yes</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">No</span>
+                    }
+                </td>
+                <td class="text-center">
+                    <a asp-action="Edit" asp-route-id="@menu.Id" class="btn btn-sm btn-warning me-1">Edit</a>
                     <a asp-action="Delete" asp-route-id="@menu.Id" class="btn btn-sm btn-danger">Delete</a>
                 </td>
             </tr>

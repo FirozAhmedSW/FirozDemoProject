@@ -25,7 +25,6 @@ namespace TaskManagementSystem.DataContext
         public DbSet<Person> Persons { get; set; }
         public DbSet<Menu> Menus { get; set; }
         public DbSet<Role> Roles { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<RoleMenuPermission> RoleMenuPermissions { get; set; }
 
 
