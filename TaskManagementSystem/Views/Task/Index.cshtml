@@ -6,29 +6,10 @@
     ViewData["Title"] = "Task";
     var searchText = ViewData["Search"] as string ?? "";
 
-    int? sessionUserId = Context.Session.GetInt32("UserId");
-    if (sessionUserId == null)
-    {
-        <div class="alert alert-danger mt-4">
-            🚫 User session not found.
-        </div>
-        return;
-    }
+    int sessionUserId =Convert.ToInt32(Context.Session.GetInt32("UserId"));
+    string UserName = Convert.ToString(Context.Session.GetString("UserName"));
 
-    int userId = sessionUserId.Value;
-
-    // 🔹 Get Role of the logged-in user
-    var role = _permissionHelper.GetRoleByUserId(userId);
-    if (role == null)
-    {
-        <div class="alert alert-danger mt-4">
-            🚫 Role not assigned for this user.
-        </div>
-        return;
-    }
-
-    // 🔹 Get permission for Tasks menu
-    var permission = _permissionHelper.GetPermission(role.Id, "Task");
+    var permission = _permissionHelper.GetUserPermissionsForController(sessionUserId, UserName, "Task");
 
     bool canView = permission?.CanView ?? false;
     bool canCreate = permission?.CanCreate ?? false;

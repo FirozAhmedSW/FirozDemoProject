@@ -42,12 +42,7 @@ namespace TaskManagementSystem.Controllers
                 return View();
             }
 
-            var user = _context.Users
-                .Where(u => !u.IsDeleted)
-                .FirstOrDefault(u =>
-                    (u.UserName ?? "").Equals(username) &&
-                    (u.Password ?? "").Equals(password)
-                );
+            var user = _context.Users.Where(u => !u.IsDeleted).FirstOrDefault(u => (u.UserName ?? "").Equals(username) && (u.Password ?? "").Equals(password) );
 
             if (user != null)
             {

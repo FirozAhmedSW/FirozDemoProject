@@ -53,7 +53,7 @@ namespace TaskManagementSystem.Helpers
 
             // 2️⃣ Find the menu matching the controller name (case-insensitive)
             var menu = _context.Menus
-                        .FirstOrDefault(m => m.Title.ToLower() == controllerName.ToLower() && m.IsActive && !m.IsDeleted);
+                        .FirstOrDefault(m => m.ControllerName.ToLower() == controllerName.ToLower() && m.IsActive && !m.IsDeleted);
             if (menu == null)
                 return null;
 
