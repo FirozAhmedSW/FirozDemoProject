@@ -22,14 +22,16 @@ namespace TaskManagementSystem.Controllers
             _env = env;
         }
 
-        // 🟢 Index View (Filter + Pagination)
-        public async Task<IActionResult> Index(string? user, DateTime? from, DateTime? to, int page = 1)
+        public async Task<IActionResult> Index(string? user,string? Useraction, DateTime? from, DateTime? to, int page = 1)
         {
             var query = _context.ActivityLogs.AsQueryable();
 
             // Filter by user
             if (!string.IsNullOrEmpty(user))
                 query = query.Where(x => x.UserName != null && x.UserName.Contains(user));
+            // Filter by user
+            if (!string.IsNullOrEmpty(Useraction))
+                query = query.Where(x => x.ActionType != null && x.ActionType.Contains(Useraction));
 
             // Filter by date range
             if (from.HasValue && to.HasValue)
@@ -53,6 +55,7 @@ namespace TaskManagementSystem.Controllers
 
             // Pass pagination and filter info to ViewData
             ViewData["CurrentUser"] = user ?? "";
+            ViewData["CurrectAction"] = Useraction ?? "";
             ViewData["From"] = from?.ToString("yyyy-MM-dd");
             ViewData["To"] = to?.ToString("yyyy-MM-dd");
             ViewData["CurrentPage"] = page;
@@ -62,8 +65,6 @@ namespace TaskManagementSystem.Controllers
             return View(logs);
         }
 
-
-        // 🧾 PDF Report Generator
         [HttpGet]
         public async Task<IActionResult> Report(string? user, DateTime? from, DateTime? to)
         {

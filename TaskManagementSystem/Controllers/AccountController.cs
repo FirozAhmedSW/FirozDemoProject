@@ -26,9 +26,6 @@ namespace TaskManagementSystem.Controllers
             _environment = environment;
         }
 
-        // ========================
-        // LOGIN
-        // ========================
         public IActionResult Login()
         {
             return View();
@@ -65,11 +62,6 @@ namespace TaskManagementSystem.Controllers
             return View();
         }
 
-
-
-        // ========================
-        // LOGOUT
-        // ========================
         public async Task<IActionResult> Logout()
         {
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
@@ -79,10 +71,6 @@ namespace TaskManagementSystem.Controllers
             return RedirectToAction("Login");
         }
 
-
-        // ========================
-        // DASHBOARD
-        // ========================
         public IActionResult Dashboard()
         {
             var userName = HttpContext.Session.GetString("UserName");
@@ -95,9 +83,6 @@ namespace TaskManagementSystem.Controllers
             return View();
         }
 
-        // ========================
-        // USER LIST + SEARCH + PAGINATION
-        // ========================
 
         public IActionResult Index(string searchText = "", int page = 1, int pageSize = 9)
         {
@@ -142,10 +127,6 @@ namespace TaskManagementSystem.Controllers
             return View(pagedUsers);
         }
 
-
-        // ========================
-        // CREATE USER
-        // ========================
         public IActionResult Create()
         {
             ViewBag.Roles = new SelectList(_context.Roles.Where(r => !r.IsDeleted && r.IsActive), "Id", "Name");
@@ -195,9 +176,6 @@ namespace TaskManagementSystem.Controllers
             return View(user);
         }
 
-
-
-        // GET: Edit
         public IActionResult Edit(int id)
         {
             var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
@@ -256,9 +234,6 @@ namespace TaskManagementSystem.Controllers
             return RedirectToAction("Index");
         }
 
-        // ========================
-        // SOFT DELETE USER
-        // ========================
         public async Task<IActionResult> Delete(int id)
         {
             var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
@@ -316,7 +291,6 @@ namespace TaskManagementSystem.Controllers
                 return RedirectToAction(nameof(Dashboard));
             }
 
-            // ✅ Log PDF generation
             await _logger.LogAsync(HttpContext.Session.GetString("UserName") ?? "System",
                                    "UserReport", $"Generated user report PDF. Total Users: {users.Count}");
 
