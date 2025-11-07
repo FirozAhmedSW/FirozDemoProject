@@ -43,20 +43,24 @@ namespace TaskManagementSystem.Controllers
                 return View();
             }
 
-            var user = _context.Users.Where(u => !u.IsDeleted).FirstOrDefault(u => (u.UserName ?? "").Equals(username) && (u.Password ?? "").Equals(password) );
+            var user = _context.Users
+                .Where(u => !u.IsDeleted)
+                .FirstOrDefault(u => (u.UserName ?? "").Equals(username) && (u.Password ?? "").Equals(password));
 
             if (user != null)
             {
                 HttpContext.Session.SetString("UserName", user.UserName ?? "");
                 HttpContext.Session.SetInt32("UserId", user.Id);
 
-                // ✅ Activity Log
+                // ✅ Log login
                 await _logger.LogAsync(user.UserName, "Login", $"User '{user.UserName}' logged in.");
 
                 return RedirectToAction("Dashboard");
             }
 
             ViewBag.Error = "Invalid credentials!";
+            await _logger.LogAsync(username ?? "Unknown", "FailedLogin", $"Failed login attempt for '{username}'.");
+
             return View();
         }
 
@@ -67,8 +71,8 @@ namespace TaskManagementSystem.Controllers
         // ========================
         public async Task<IActionResult> Logout()
         {
-            //var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-            //await _logger.LogAsync(userName, "Logout", $"User '{userName}' logged out.");
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+            await _logger.LogAsync(userName, "Logout", $"User '{userName}' logged out.");
 
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
@@ -146,14 +150,12 @@ namespace TaskManagementSystem.Controllers
             ViewBag.Roles = new SelectList(_context.Roles.Where(r => !r.IsDeleted && r.IsActive), "Id", "Name");
             return View();
         }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(User user, IFormFile? Photo)
         {
             if (ModelState.IsValid)
             {
-                // ✅ Handle photo upload
                 if (Photo != null && Photo.Length > 0)
                 {
                     var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/users");
@@ -171,7 +173,6 @@ namespace TaskManagementSystem.Controllers
                     user.PhotoPath = "/images/users/" + fileName;
                 }
 
-                // ✅ Set default values
                 user.CreatedAt = DateTime.Now;
                 user.IsActive = true;
                 user.IsDeleted = false;
@@ -179,21 +180,19 @@ namespace TaskManagementSystem.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                // ✅ Activity log
+                // ✅ Log creation
                 await _logger.LogAsync(HttpContext.Session.GetString("UserName") ?? "System",
-                                       "Create", $"User '{user.UserName}' created.");
+                                       "CreateUser", $"User '{user.UserName}' created.");
 
                 return RedirectToAction("Index");
             }
 
-            // ✅ Repopulate Role dropdown if validation fails
             ViewBag.Roles = new SelectList(_context.Roles
                                            .Where(r => !r.IsDeleted && r.IsActive)
                                            .ToList(), "Id", "Name", user.RoleId);
 
             return View(user);
         }
-
 
 
 
@@ -218,7 +217,6 @@ namespace TaskManagementSystem.Controllers
             var existingUser = _context.Users.Find(user.Id);
             if (existingUser == null) return NotFound();
 
-            // ✅ Handle photo upload
             if (Photo != null && Photo.Length > 0)
             {
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/users");
@@ -236,7 +234,6 @@ namespace TaskManagementSystem.Controllers
                 existingUser.PhotoPath = "/images/users/" + fileName;
             }
 
-            // ✅ Update fields
             existingUser.UserName = user.UserName;
             existingUser.Email = user.Email;
             if (!string.IsNullOrEmpty(user.Password))
@@ -245,20 +242,18 @@ namespace TaskManagementSystem.Controllers
             existingUser.Address = user.Address;
             existingUser.Contact = user.Contact;
             existingUser.About = user.About;
-            existingUser.RoleId = user.RoleId;       // ✅ Update role
+            existingUser.RoleId = user.RoleId;
             existingUser.UpdatedAt = DateTime.Now;
 
             _context.Users.Update(existingUser);
             await _context.SaveChangesAsync();
 
-            // ✅ Activity log
+            // ✅ Log update
             await _logger.LogAsync(HttpContext.Session.GetString("UserName") ?? "System",
-                                   "Edit", $"User '{existingUser.UserName}' updated.");
+                                   "EditUser", $"User '{existingUser.UserName}' updated.");
 
             return RedirectToAction("Index");
         }
-
-
 
         // ========================
         // SOFT DELETE USER
@@ -275,7 +270,9 @@ namespace TaskManagementSystem.Controllers
             _context.Users.Update(user);
             _context.SaveChanges();
 
-            await _logger.LogAsync(user.UserName, "Delete", $"User '{user.UserName}' deleted.");
+            // ✅ Log delete
+            await _logger.LogAsync(HttpContext.Session.GetString("UserName") ?? "System",
+                                   "DeleteUser", $"User '{user.UserName}' deleted.");
 
             return RedirectToAction("Index");
         }
@@ -296,10 +293,7 @@ namespace TaskManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> UserReport(string? search)
         {
-            // Fetch users with Role included
-            var query = _context.Users
-                .Include(u => u.Role) // ✅ Include Role
-                .Where(u => !u.IsDeleted);
+            var query = _context.Users.Include(u => u.Role).Where(u => !u.IsDeleted);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -309,7 +303,7 @@ namespace TaskManagementSystem.Controllers
                     (u.Address ?? "").Contains(search) ||
                     (u.Contact ?? "").Contains(search) ||
                     (u.About ?? "").Contains(search) ||
-                    (u.Role != null && u.Role.Name.Contains(search)) // ✅ search by Role
+                    (u.Role != null && u.Role.Name.Contains(search))
                 );
             }
 
@@ -320,6 +314,10 @@ namespace TaskManagementSystem.Controllers
                 TempData["Error"] = "No user data found for report.";
                 return RedirectToAction(nameof(Dashboard));
             }
+
+            // ✅ Log PDF generation
+            await _logger.LogAsync(HttpContext.Session.GetString("UserName") ?? "System",
+                                   "UserReport", $"Generated user report PDF. Total Users: {users.Count}");
 
             using var ms = new MemoryStream();
             var doc = new Document(PageSize.A4, 20f, 20f, 40f, 40f);
