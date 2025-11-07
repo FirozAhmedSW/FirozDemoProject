@@ -5,25 +5,31 @@ using System.Linq;
 using iTextSharp.text.pdf;
 using iTextSharp.text;
 using Microsoft.EntityFrameworkCore;
+using TaskManagementSystem.Services;
 
 namespace TaskManagementSystem.Controllers
 {
     public class ExpenseController : Controller
     {
         private readonly ApplicationDbContext _context;
-
         private readonly IWebHostEnvironment _environment;
+        private readonly ActivityLogger _logger;
 
-        public ExpenseController(ApplicationDbContext context, IWebHostEnvironment environment)
+        public ExpenseController(ApplicationDbContext context, IWebHostEnvironment environment, ActivityLogger logger)
         {
             _context = context;
             _environment = environment;
+            _logger = logger;
         }
 
         // ✅ Index / Main Report Page with Filters + Pagination
         [HttpGet]
-        public IActionResult Index(string? month, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string? month, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
         {
+
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+
+            await _logger.LogAsync(userName, "View Expense", $"Expense View this User : '{userName}'. ");
             var expenses = _context.Expenses.Where(x => !x.IsDeleted).AsQueryable();
 
             // 🔹 Filter by From/To date (priority)

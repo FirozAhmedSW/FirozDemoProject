@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models;
+using TaskManagementSystem.Services;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -10,15 +11,22 @@ namespace TaskManagementSystem.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
+        private readonly ActivityLogger _actilogger;
 
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, ActivityLogger actilogger)
         {
             _logger = logger;
             _context = context;
+            _actilogger = actilogger;
         }
 
         public async Task<IActionResult> Index()
         {
+
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+            await _actilogger.LogAsync(userName, "View Dashboard", $"Dashboard View this User : '{userName}'. ");
+
+
             // ✅ Session থেকে username নেওয়া
             var name = HttpContext.Session.GetString("UserName");
             ViewBag.UserName = name;

@@ -49,7 +49,6 @@ namespace TaskManagementSystem.Controllers
                 HttpContext.Session.SetString("UserName", user.UserName ?? "");
                 HttpContext.Session.SetInt32("UserId", user.Id);
 
-                // ✅ Log login
                 await _logger.LogAsync(user.UserName, "Login", $"User '{user.UserName}' logged in.");
 
                 return RedirectToAction("Index", "Home");

@@ -6,6 +6,7 @@ using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models;
 using System.IO;
 using TaskManagementSystem.Helpers;
+using TaskManagementSystem.Services;
 
 
 namespace TaskManagementSystem.Controllers
@@ -14,17 +15,22 @@ namespace TaskManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly ActivityLogger _logger;
         private const int PageSize = 10;
 
-        public ActivityLogsController(ApplicationDbContext context, IWebHostEnvironment env)
+        public ActivityLogsController(ApplicationDbContext context, IWebHostEnvironment env,ActivityLogger logger)
         {
             _context = context;
             _env = env;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(string? user,string? Useraction, DateTime? from, DateTime? to, int page = 1)
         {
             var query = _context.ActivityLogs.AsQueryable();
+
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+            await _logger.LogAsync(userName, "View ActivityLogs", $"ActivityLogs View this User : '{userName}'. ");
 
             // Filter by user
             if (!string.IsNullOrEmpty(user))
@@ -69,6 +75,8 @@ namespace TaskManagementSystem.Controllers
         public async Task<IActionResult> Report(string? user, DateTime? from, DateTime? to)
         {
             var query = _context.ActivityLogs.AsQueryable();
+            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+            await _logger.LogAsync(userName, "Print Report", $"ActivityLogs Generate a Report this User : '{userName}'. ");
 
             if (!string.IsNullOrEmpty(user))
                 query = query.Where(x => x.UserName != null && x.UserName.Contains(user));
