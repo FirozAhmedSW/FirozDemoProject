@@ -150,7 +150,17 @@
         <div class="wrapper">
             <!-- Sidebar -->
             <nav class="sidebar d-flex flex-column p-3">
+                <!-- Title -->
                 <h4 class="text-center mb-4 fw-bold">Task Management</h4>
+
+                <!-- Logo Section -->
+                <div class="text-center mb-3">
+                    <img src="~/Logo/pngegg.png" alt="Logo"
+                         class="img-fluid shadow-sm"
+                         style="width:80px; height:80px; object-fit:cover;">
+                </div>
+
+                <!-- Menu List -->
                 <ul class="nav nav-pills flex-column mb-auto">
                     @foreach (var menu in menus)
                     {
@@ -163,6 +173,7 @@
                     }
                 </ul>
             </nav>
+
 
             <!-- Main content -->
             <div class="main-content">

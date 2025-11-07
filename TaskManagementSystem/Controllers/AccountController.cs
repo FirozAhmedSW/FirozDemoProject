@@ -55,7 +55,8 @@ namespace TaskManagementSystem.Controllers
                 // ✅ Log login
                 await _logger.LogAsync(user.UserName, "Login", $"User '{user.UserName}' logged in.");
 
-                return RedirectToAction("Dashboard");
+                return RedirectToAction("Index", "Home");
+
             }
 
             ViewBag.Error = "Invalid credentials!";

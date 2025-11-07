@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models;
 using System.IO;
+using TaskManagementSystem.Helpers;
 
 
 namespace TaskManagementSystem.Controllers
@@ -100,38 +101,42 @@ namespace TaskManagementSystem.Controllers
 
             // ========= PDF Setup =========
             using var ms = new MemoryStream();
-            var pageSize = new iTextSharp.text.Rectangle(842f, 595f); // A4 Landscape
-            var doc = new Document(pageSize, 20f, 20f, 40f, 40f);
+            var pageSize = new iTextSharp.text.Rectangle(842f, 595f); // Landscape
+            var doc = new Document(pageSize, 20f, 20f, 40f, 50f);
 
             var writer = PdfWriter.GetInstance(doc, ms);
+
+            // Custom footer event handler
+            var printedBy = HttpContext.Session.GetString("UserName") ?? "Unknown";
+            writer.PageEvent = new PdfFooterEventHelper(printedBy);
+
             doc.Open();
 
             // ========= Custom Font Setup =========
             var fontPath = Path.Combine(_env.WebRootPath, "fonts", "arial.ttf");
             if (!System.IO.File.Exists(fontPath))
             {
-                // Fallback system font
                 fontPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
             }
 
             BaseFont baseFont = BaseFont.CreateFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
             Font normalFont = new Font(baseFont, 10, Font.NORMAL);
             Font boldFont = new Font(baseFont, 12, Font.BOLD);
-            Font headerFont = new Font(baseFont, 20, Font.BOLD);
+            Font headerFont = new Font(baseFont, 18, Font.BOLD);
 
             // ========= HEADER =========
-            var logoPath = Path.Combine(_env.WebRootPath, "images", "fire_logo.png");
+            var logoPath = Path.Combine(_env.WebRootPath, "Logo", "F_logo.png");
             var headerTable = new PdfPTable(2) { WidthPercentage = 100, SpacingAfter = 5f };
             headerTable.SetWidths(new float[] { 15f, 85f });
 
             if (System.IO.File.Exists(logoPath))
             {
                 var logo = iTextSharp.text.Image.GetInstance(logoPath);
-                logo.ScaleAbsolute(50f, 50f);
+                logo.ScaleAbsolute(60f, 60f);
                 var logoCell = new PdfPCell(logo)
                 {
                     Border = Rectangle.NO_BORDER,
-                    HorizontalAlignment = Element.ALIGN_RIGHT
+                    HorizontalAlignment = Element.ALIGN_CENTER
                 };
                 headerTable.AddCell(logoCell);
             }
@@ -152,7 +157,7 @@ namespace TaskManagementSystem.Controllers
             doc.Add(new Paragraph("\n"));
 
             // ========= Subtitle =========
-            var subTitle = new Paragraph(dynamicTitle, normalFont)
+            var subTitle = new Paragraph(dynamicTitle, boldFont)
             {
                 Alignment = Element.ALIGN_CENTER,
                 SpacingAfter = 15f
@@ -160,10 +165,10 @@ namespace TaskManagementSystem.Controllers
             doc.Add(subTitle);
 
             // ========= Table =========
-            var table = new PdfPTable(5) { WidthPercentage = 100f };
-            table.SetWidths(new float[] { 5f, 20f, 25f, 20f, 30f });
+            var table = new PdfPTable(6) { WidthPercentage = 100f };
+            table.SetWidths(new float[] { 5f, 15f, 20f, 20f, 25f, 15f });
 
-            string[] headers = { "SL", "User Name", "Action", "IP Address", "Created At" };
+            string[] headers = { "SL", "User Name", "Action", "Description", "IP Address", "Created At" };
 
             foreach (var h in headers)
             {
@@ -178,9 +183,10 @@ namespace TaskManagementSystem.Controllers
             int sl = 1;
             foreach (var log in logs)
             {
-                table.AddCell(new PdfPCell(new Phrase(sl.ToString(), normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(sl.ToString(), normalFont)) { Padding = 5f, HorizontalAlignment = Element.ALIGN_CENTER });
                 table.AddCell(new PdfPCell(new Phrase(log.UserName ?? "", normalFont)) { Padding = 5f });
                 table.AddCell(new PdfPCell(new Phrase(log.ActionType ?? "", normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(log.Description ?? "", normalFont)) { Padding = 5f });
                 table.AddCell(new PdfPCell(new Phrase(log.IpAddress ?? "", normalFont)) { Padding = 5f });
                 table.AddCell(new PdfPCell(new Phrase(log.CreatedAt.ToString("dd-MMM-yyyy hh:mm tt"), normalFont)) { Padding = 5f });
                 sl++;
@@ -191,5 +197,8 @@ namespace TaskManagementSystem.Controllers
 
             return File(ms.ToArray(), "application/pdf", "ActivityLogReport.pdf");
         }
+
+
+
     }
 }

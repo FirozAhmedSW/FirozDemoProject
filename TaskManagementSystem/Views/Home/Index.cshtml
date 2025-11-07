@@ -1,5 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Dashboard";
+    var logs = ViewBag.RecentLogs as List<TaskManagementSystem.Models.ActivityLog>;
 }
 
 <div class="container-fluid">
@@ -39,6 +40,7 @@
     </div>
 
     <h4 class="mt-4">Recent Activity</h4>
+
     <table class="table table-striped">
         <thead>
             <tr>
@@ -48,21 +50,23 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>10:30 AM</td>
-                <td>Firoz</td>
-                <td>Logged In</td>
-            </tr>
-            <tr>
-                <td>11:00 AM</td>
-                <td>Ali</td>
-                <td>Created Report</td>
-            </tr>
-            <tr>
-                <td>11:30 AM</td>
-                <td>Saimun</td>
-                <td>Updated Settings</td>
-            </tr>
+            @if (logs != null && logs.Any())
+            {
+                foreach (var log in logs)
+                {
+                    <tr>
+                        <td>@log.CreatedAt.ToString("dd-MMM-yyyy hh:mm tt")</td>
+                        <td>@log.UserName</td>
+                        <td>@log.ActionType</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3" class="text-center text-muted">No recent activity found</td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>
