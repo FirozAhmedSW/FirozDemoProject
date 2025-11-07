@@ -5,12 +5,18 @@
 }
 
 <h2>Roles</h2>
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Role</a>
-</p>
 
-<table class="table table-bordered table-striped">
-    <thead>
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search roles..." value="@ViewBag.Search" />
+    </div>
+    <div class="col-md-8 text-end">
+        <a asp-action="Create" class="btn btn-primary">Create New Role</a>
+    </div>
+</div>
+
+<table class="table table-bordered table-striped align-middle">
+    <thead class="table-dark">
         <tr>
             <th>Name</th>
             <th>Description</th>
@@ -24,7 +30,16 @@
             <tr>
                 <td>@role.Name</td>
                 <td>@role.Description</td>
-                <td>@(role.IsActive ? "Yes" : "No")</td>
+                <td class="text-center">
+                    @if (role.IsActive)
+                    {
+                        <input type="checkbox" class="isActiveCheckbox" data-id="@role.Id" checked />
+                    }
+                    else
+                    {
+                        <input type="checkbox" class="isActiveCheckbox" data-id="@role.Id" />
+                    }
+                </td>
                 <td>
                     <a asp-action="Edit" asp-route-id="@role.Id" class="btn btn-sm btn-warning">Edit</a>
                     <a asp-action="Delete" asp-route-id="@role.Id" class="btn btn-sm btn-danger">Delete</a>
@@ -33,3 +48,83 @@
         }
     </tbody>
 </table>
+
+<!-- Pagination -->
+@if ((int)ViewBag.TotalPages > 1)
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Left Info -->
+        <div>
+            @{
+                int currentPage = (int)ViewBag.CurrentPage;
+                int totalPages = (int)ViewBag.TotalPages;
+                int totalCount = (int)ViewBag.TotalCount;
+                int startItem = ((currentPage - 1) * 10) + 1;
+                int endItem = Math.Min(currentPage * 10, totalCount);
+            }
+            <small class="text-muted">
+                Showing @startItem–@endItem of @totalCount roles (Page @currentPage of @totalPages)
+            </small>
+        </div>
+
+        <!-- Center Pagination -->
+        <nav>
+            <ul class="pagination mb-0">
+                @{
+                    string? search = ViewBag.Search?.ToString();
+
+                    int startPage = Math.Max(currentPage - 2, 1);
+                    int endPage = Math.Min(startPage + 4, totalPages);
+                    startPage = Math.Max(endPage - 4, 1);
+                }
+
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = 1, search })">&laquo; First</a>
+                </li>
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1, search })">Previous</a>
+                </li>
+
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    <li class="page-item @(i == currentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { page = i, search })">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1, search })">Next</a>
+                </li>
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = totalPages, search })">Last &raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Toggle IsActive via AJAX
+        $(document).on('change', '.isActiveCheckbox', function () {
+            const id = $(this).data('id');
+            const isActive = $(this).is(':checked');
+
+            $.post('@Url.Action("ToggleActive")', { id, isActive }, function (res) {
+                if (!res.success) alert("Failed to update status.");
+            });
+        });
+
+        // Search filter
+        let typingTimer;
+        const delay = 400;
+
+        $('#searchBox').on('keyup', function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                window.location.href = '@Url.Action("Index")?search=' + $(this).val();
+            }, delay);
+        });
+    </script>
+}

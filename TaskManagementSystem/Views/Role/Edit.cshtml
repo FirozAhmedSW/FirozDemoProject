@@ -10,21 +10,29 @@
     <!-- Hidden field for Id -->
     <input type="hidden" asp-for="Id" />
 
-    <div class="form-group mb-2">
+    <div class="mb-3">
         <label asp-for="Name" class="form-label"></label>
         <input asp-for="Name" class="form-control" />
         <span asp-validation-for="Name" class="text-danger"></span>
     </div>
 
-    <div class="form-group mb-2">
+    <div class="mb-3">
         <label asp-for="Description" class="form-label"></label>
         <input asp-for="Description" class="form-control" />
         <span asp-validation-for="Description" class="text-danger"></span>
     </div>
 
-    <div class="form-check mb-2">
-        <input asp-for="IsActive" class="form-check-input" />
-        <label asp-for="IsActive" class="form-check-label"></label>
+    <div class="form-check mb-3">
+        @* Properly handle checkbox checked state *@
+        @if (Model.IsActive)
+        {
+            <input type="checkbox" asp-for="IsActive" class="form-check-input" checked />
+        }
+        else
+        {
+            <input type="checkbox" asp-for="IsActive" class="form-check-input" />
+        }
+        <label asp-for="IsActive" class="form-check-label">Is Active</label>
     </div>
 
     <button type="submit" class="btn btn-success">Update</button>
@@ -32,7 +40,5 @@
 </form>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @await Html.PartialAsync("_ValidationScriptsPartial")
 }

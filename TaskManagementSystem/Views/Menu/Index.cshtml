@@ -2,13 +2,19 @@
 
 @{
     ViewData["Title"] = "Menus";
+    int PageSize = 10;
 }
 
 <h2 class="mb-3">Menus</h2>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Menu</a>
-</p>
+<div class="row mb-3">
+    <div class="col-md-6">
+        <input type="text" id="searchBox" class="form-control" placeholder="Search by Title/Controller/Action" value="@ViewBag.Search" />
+    </div>
+    <div class="col-md-6 text-end">
+        <a asp-action="Create" class="btn btn-primary">Create New Menu</a>
+    </div>
+</div>
 
 <table class="table table-bordered table-striped table-hover">
     <thead class="table-dark">
@@ -26,18 +32,11 @@
         {
             <tr>
                 <td>@menu.Title</td>
-                <td>@(menu.ParentId != null)</td>
+                <td>@menu.ParentId</td>
                 <td>@menu.ControllerName</td>
                 <td>@menu.ActionName</td>
                 <td class="text-center">
-                    @if (menu.IsActive)
-                    {
-                        <span class="badge bg-success">Yes</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-danger">No</span>
-                    }
+                    <input type="checkbox" class="isActiveCheckbox" data-id="@menu.Id" @(menu.IsActive ? "checked" : "") />
                 </td>
                 <td class="text-center">
                     <a asp-action="Edit" asp-route-id="@menu.Id" class="btn btn-sm btn-warning me-1">Edit</a>
@@ -47,3 +46,76 @@
         }
     </tbody>
 </table>
+
+@if ((int)ViewBag.TotalPages > 1)
+{
+    <nav class="d-flex justify-content-center mt-3">
+        <ul class="pagination">
+            @{
+                int currentPage = (int)ViewBag.CurrentPage;
+                int totalPages = (int)ViewBag.TotalPages;
+                int startPage = Math.Max(currentPage - 2, 1);
+                int endPage = Math.Min(startPage + 4, totalPages);
+                startPage = Math.Max(endPage - 4, 1);
+            }
+
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = 1, search = ViewBag.Search })">&laquo; First</a>
+            </li>
+
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1, search = ViewBag.Search })">Previous</a>
+            </li>
+
+            @for (int i = startPage; i <= endPage; i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = i, search = ViewBag.Search })">@i</a>
+                </li>
+            }
+
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1, search = ViewBag.Search })">Next</a>
+            </li>
+
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = totalPages, search = ViewBag.Search })">Last &raquo;</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@section Scripts{
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // ✅ Search box delay
+    let typingTimer;
+    const delay = 400;
+
+    $("#searchBox").on("keyup", function () {
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(function () {
+            const search = $("#searchBox").val();
+            window.location.href = '@Url.Action("Index")?search=' + encodeURIComponent(search);
+        }, delay);
+    });
+
+    // ✅ Toggle IsActive via AJAX
+    $(".isActiveCheckbox").on("change", function () {
+        const id = $(this).data("id");
+        const isActive = $(this).is(":checked");
+
+        $.ajax({
+            url: '@Url.Action("ToggleActive")',
+            type: 'POST',
+            data: { id: id, isActive: isActive },
+            success: function () {
+                // optional: show toast or message
+            },
+            error: function () {
+                alert("Error updating status.");
+            }
+        });
+    });
+</script>
+}

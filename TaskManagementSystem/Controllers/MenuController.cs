@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TaskManagementSystem.Models;
-using TaskManagementSystem.DataContext;
 using TaskManagementSystem.Models.Permission;
+using TaskManagementSystem.DataContext;
 
 namespace TaskManagementSystem.Controllers
 {
     public class MenuController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly int PageSize = 10; // Pagination page size
 
         public MenuController(ApplicationDbContext context)
         {
@@ -16,22 +16,52 @@ namespace TaskManagementSystem.Controllers
         }
 
         // GET: Menu
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search, int page = 1)
         {
-            var menus = await _context.Menus
+            var query = _context.Menus.AsQueryable();
+
+            // 🔍 Search
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(m =>
+                    (m.Title ?? "").Contains(search) ||
+                    (m.ControllerName ?? "").Contains(search) ||
+                    (m.ActionName ?? "").Contains(search)
+                );
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
+
+            var menus = await query
+                .OrderBy(m => m.Id)
+                .Skip((page - 1) * PageSize)
+                .Take(PageSize)
                 .ToListAsync();
 
-            // Optionally, load parent title for display
-            var menuList = menus.Select(m => new
-            {
-                m.Id,
-                m.Title,
-                ParentTitle = menus.FirstOrDefault(p => p.Id == m.ParentId)?.Title
-            }).ToList();
-
-            ViewBag.MenuParents = menuList;
+            ViewBag.MenuParents = 1;
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.Search = search;
 
             return View(menus);
+        }
+
+        // POST: Toggle IsActive via AJAX
+        [HttpPost]
+        public async Task<IActionResult> ToggleActive(int id, bool isActive)
+        {
+            var menu = await _context.Menus.FindAsync(id);
+            if (menu == null) return NotFound();
+
+            menu.IsActive = isActive;
+            menu.UpdatedAt = DateTime.Now;
+
+            _context.Menus.Update(menu);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true });
         }
 
         // GET: Menu/Create
@@ -51,9 +81,8 @@ namespace TaskManagementSystem.Controllers
                 menu.CreatedAt = DateTime.Now;
                 menu.IsActive = true;
                 menu.IsDeleted = false;
-                menu.ParentId = 1;
 
-                _context.Add(menu);
+                _context.Menus.Add(menu);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
@@ -86,9 +115,8 @@ namespace TaskManagementSystem.Controllers
                 try
                 {
                     menu.UpdatedAt = DateTime.Now;
-                    menu.IsActive = true;
-                    menu.ParentId = 1;
-                    _context.Update(menu);
+
+                    _context.Menus.Update(menu);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -130,7 +158,9 @@ namespace TaskManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Helper methods
+        // ====================
+        // Helper Methods
+        // ====================
         private void LoadParentMenus(int? excludeId = null)
         {
             var parents = _context.Menus
