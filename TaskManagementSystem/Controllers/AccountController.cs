@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using iTextSharp.text.pdf;
 using iTextSharp.text;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace TaskManagementSystem.Controllers
 {
@@ -92,15 +93,16 @@ namespace TaskManagementSystem.Controllers
         // ========================
         // USER LIST + SEARCH + PAGINATION
         // ========================
+
         public IActionResult Index(string searchText = "", int page = 1, int pageSize = 9)
         {
-            // Check session
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
                 return RedirectToAction("Login");
 
             var query = _context.Users
-                .Where(u => !u.IsDeleted) // ✅ show only active users
-                .AsQueryable();
+                                .Include(u => u.Role) // ✅ Include Role
+                                .Where(u => !u.IsDeleted)
+                                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchText))
             {
@@ -109,17 +111,19 @@ namespace TaskManagementSystem.Controllers
                     u.Email.Contains(searchText) ||
                     u.Address.Contains(searchText) ||
                     u.Contact.Contains(searchText) ||
-                    u.About.Contains(searchText)
+                    u.About.Contains(searchText) ||
+                    (u.Role != null && u.Role.Name.Contains(searchText)) // ✅ search by role
                 );
             }
 
             var totalUsers = query.Count();
             var totalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
+
             var pagedUsers = query
-                .OrderBy(u => u.Id)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+                             .OrderBy(u => u.Id)
+                             .Skip((page - 1) * pageSize)
+                             .Take(pageSize)
+                             .ToList();
 
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
@@ -133,19 +137,26 @@ namespace TaskManagementSystem.Controllers
             return View(pagedUsers);
         }
 
+
         // ========================
         // CREATE USER
         // ========================
-        public IActionResult Create() => View();
+        public IActionResult Create()
+        {
+            ViewBag.Roles = new SelectList(_context.Roles.Where(r => !r.IsDeleted && r.IsActive), "Id", "Name");
+            return View();
+        }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(User user, IFormFile? Photo)
         {
             if (ModelState.IsValid)
             {
+                // ✅ Handle photo upload
                 if (Photo != null && Photo.Length > 0)
                 {
-                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/users");
                     if (!Directory.Exists(uploadsFolder))
                         Directory.CreateDirectory(uploadsFolder);
 
@@ -154,44 +165,63 @@ namespace TaskManagementSystem.Controllers
 
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        Photo.CopyTo(stream);
+                        await Photo.CopyToAsync(stream);
                     }
 
-                    user.PhotoPath = "/images/" + fileName;
+                    user.PhotoPath = "/images/users/" + fileName;
                 }
 
-                _context.Users.Add(user);
-                _context.SaveChanges();
+                // ✅ Set default values
+                user.CreatedAt = DateTime.Now;
+                user.IsActive = true;
+                user.IsDeleted = false;
 
-                // ✅ Activity Log
-                await _logger.LogAsync(user.UserName, "Create", $"User '{user.UserName}' created.");
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                // ✅ Activity log
+                await _logger.LogAsync(HttpContext.Session.GetString("UserName") ?? "System",
+                                       "Create", $"User '{user.UserName}' created.");
 
                 return RedirectToAction("Index");
             }
 
+            // ✅ Repopulate Role dropdown if validation fails
+            ViewBag.Roles = new SelectList(_context.Roles
+                                           .Where(r => !r.IsDeleted && r.IsActive)
+                                           .ToList(), "Id", "Name", user.RoleId);
+
             return View(user);
         }
 
 
 
-        // ========================
-        // EDIT USER
-        // ========================
+
+        // GET: Edit
         public IActionResult Edit(int id)
         {
             var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
             if (user == null) return NotFound();
+
+            // ✅ Populate Role dropdown
+            ViewBag.Roles = new SelectList(_context.Roles
+                                           .Where(r => !r.IsDeleted && r.IsActive)
+                                           .ToList(), "Id", "Name", user.RoleId);
+
             return View(user);
         }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(User user, IFormFile? Photo)
         {
             var existingUser = _context.Users.Find(user.Id);
             if (existingUser == null) return NotFound();
 
+            // ✅ Handle photo upload
             if (Photo != null && Photo.Length > 0)
             {
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/users");
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
@@ -200,12 +230,13 @@ namespace TaskManagementSystem.Controllers
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    Photo.CopyTo(stream);
+                    await Photo.CopyToAsync(stream);
                 }
 
-                existingUser.PhotoPath = "/images/" + fileName;
+                existingUser.PhotoPath = "/images/users/" + fileName;
             }
 
+            // ✅ Update fields
             existingUser.UserName = user.UserName;
             existingUser.Email = user.Email;
             if (!string.IsNullOrEmpty(user.Password))
@@ -214,17 +245,18 @@ namespace TaskManagementSystem.Controllers
             existingUser.Address = user.Address;
             existingUser.Contact = user.Contact;
             existingUser.About = user.About;
+            existingUser.RoleId = user.RoleId;       // ✅ Update role
             existingUser.UpdatedAt = DateTime.Now;
 
             _context.Users.Update(existingUser);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            // ✅ Activity Log
-            await _logger.LogAsync(existingUser.UserName, "Edit", $"User '{existingUser.UserName}' updated.");
+            // ✅ Activity log
+            await _logger.LogAsync(HttpContext.Session.GetString("UserName") ?? "System",
+                                   "Edit", $"User '{existingUser.UserName}' updated.");
 
             return RedirectToAction("Index");
         }
-
 
 
 
@@ -249,13 +281,14 @@ namespace TaskManagementSystem.Controllers
         }
 
 
-        // ========================
-        // DETAILS
-        // ========================
         public IActionResult Details(int id)
         {
-            var user = _context.Users.FirstOrDefault(u => u.Id == id && !u.IsDeleted);
+            var user = _context.Users
+                               .Include(u => u.Role)  // <-- Include Role
+                               .FirstOrDefault(u => u.Id == id && !u.IsDeleted);
+
             if (user == null) return NotFound();
+
             return View(user);
         }
 
@@ -263,7 +296,9 @@ namespace TaskManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> UserReport(string? search)
         {
+            // Fetch users with Role included
             var query = _context.Users
+                .Include(u => u.Role) // ✅ Include Role
                 .Where(u => !u.IsDeleted);
 
             if (!string.IsNullOrEmpty(search))
@@ -273,7 +308,8 @@ namespace TaskManagementSystem.Controllers
                     (u.Email ?? "").Contains(search) ||
                     (u.Address ?? "").Contains(search) ||
                     (u.Contact ?? "").Contains(search) ||
-                    (u.About ?? "").Contains(search)
+                    (u.About ?? "").Contains(search) ||
+                    (u.Role != null && u.Role.Name.Contains(search)) // ✅ search by Role
                 );
             }
 
@@ -300,7 +336,7 @@ namespace TaskManagementSystem.Controllers
 
             var writer = PdfWriter.GetInstance(doc, ms);
 
-            // ✅ Footer with page number and creator
+            // Footer with page numbers and creator
             writer.PageEvent = new PdfPageEvents(baseFont);
 
             doc.Open();
@@ -339,9 +375,10 @@ namespace TaskManagementSystem.Controllers
             doc.Add(subTitle);
 
             // Table
-            var table = new PdfPTable(6) { WidthPercentage = 100f };
-            table.SetWidths(new float[] { 5f, 20f, 25f, 15f, 15f, 20f });
-            string[] headers = { "SL", "User Name", "Email", "Contact", "Address", "About" };
+            var table = new PdfPTable(7) { WidthPercentage = 100f }; // ✅ Added Role column
+            table.SetWidths(new float[] { 5f, 18f, 22f, 15f, 15f, 15f, 15f });
+
+            string[] headers = { "SL", "User Name", "Email", "Role", "Contact", "Address", "About" };
 
             foreach (var h in headers)
             {
@@ -359,6 +396,7 @@ namespace TaskManagementSystem.Controllers
                 table.AddCell(new PdfPCell(new Phrase(sl.ToString(), normalFont)) { Padding = 5f });
                 table.AddCell(new PdfPCell(new Phrase(user.UserName ?? "", normalFont)) { Padding = 5f });
                 table.AddCell(new PdfPCell(new Phrase(user.Email ?? "", normalFont)) { Padding = 5f });
+                table.AddCell(new PdfPCell(new Phrase(user.Role?.Name ?? "N/A", normalFont)) { Padding = 5f }); // ✅ Role
                 table.AddCell(new PdfPCell(new Phrase(user.Contact ?? "", normalFont)) { Padding = 5f });
                 table.AddCell(new PdfPCell(new Phrase(user.Address ?? "", normalFont)) { Padding = 5f });
                 table.AddCell(new PdfPCell(new Phrase(user.About ?? "", normalFont)) { Padding = 5f });
@@ -370,6 +408,7 @@ namespace TaskManagementSystem.Controllers
 
             return File(ms.ToArray(), "application/pdf", "UserReport.pdf");
         }
+
 
         // ✅ Page Event Handler for Footer
         public class PdfPageEvents : PdfPageEventHelper

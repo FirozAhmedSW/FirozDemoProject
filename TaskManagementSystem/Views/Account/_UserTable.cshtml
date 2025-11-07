@@ -7,6 +7,7 @@
             <th>Photo</th>
             <th>User Name</th>
             <th>Email</th>
+            <th>Role</th> <!-- ✅ Added Role column -->
             <th>Address</th>
             <th>Contact</th>
             <th>About</th>
@@ -17,7 +18,7 @@
         @if (Model == null || !Model.Any())
         {
             <tr>
-                <td colspan="8" class="text-center text-danger">No users found!</td>
+                <td colspan="9" class="text-center text-danger">No users found!</td>
             </tr>
         }
         else
@@ -39,6 +40,7 @@
                     </td>
                     <td>@user.UserName</td>
                     <td>@user.Email</td>
+                    <td>@(user.Role != null ? user.Role.Name : "N/A")</td> <!-- ✅ Role display -->
                     <td>@user.Address</td>
                     <td>@user.Contact</td>
                     <td>@user.About</td>
@@ -55,7 +57,6 @@
     </tbody>
 </table>
 
-<!-- Pagination -->
 @if (ViewBag.TotalPages != null && ViewBag.TotalPages > 1)
 {
     <nav aria-label="Page navigation">

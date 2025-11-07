@@ -5,11 +5,11 @@
 
 <div class="row align-items-center mb-3">
     <div class="col-md-4">
-        <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" />
+        <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" value="@ViewBag.SearchText" />
     </div>
     <div class="col-md-8 text-end">
         <a href="@Url.Action("Create", "Account")" class="btn btn-primary">Add User</a>
-        <a href="@Url.Action("UserReport", "Account")" class="btn btn-success ms-2">Generate Report</a> <!-- ✅ Report button -->
+        <a href="@Url.Action("UserReport", "Account")" class="btn btn-success ms-2">Generate Report</a>
     </div>
 </div>
 

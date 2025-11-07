@@ -18,14 +18,22 @@
         <div class="col-md-8">
             <div class="card-body">
                 <h5 class="card-title">@Model.UserName</h5>
+
                 <p class="card-text"><strong>Email:</strong> @Model.Email</p>
+                <p class="card-text"><strong>Role:</strong> @(Model.Role != null ? Model.Role.Name : "No Role Assigned")</p>
                 <p class="card-text"><strong>Address:</strong> @Model.Address</p>
                 <p class="card-text"><strong>Contact:</strong> @Model.Contact</p>
                 <p class="card-text"><strong>About:</strong> @Model.About</p>
-                <p class="card-text"><small class="text-muted">Created at: @Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</small></p>
+
+                <p class="card-text">
+                    <small class="text-muted">Created at: @Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</small>
+                </p>
+
                 @if (Model.UpdatedAt.HasValue)
                 {
-                    <p class="card-text"><small class="text-muted">Last updated: @Model.UpdatedAt.Value.ToString("dd MMM yyyy HH:mm")</small></p>
+                    <p class="card-text">
+                        <small class="text-muted">Last updated: @Model.UpdatedAt.Value.ToString("dd MMM yyyy HH:mm")</small>
+                    </p>
                 }
 
                 <div class="mt-3">
