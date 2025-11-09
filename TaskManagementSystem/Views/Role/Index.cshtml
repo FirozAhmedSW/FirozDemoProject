@@ -1,7 +1,17 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.Permission.Role>
+@inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
 
 @{
     ViewData["Title"] = "Roles";
+    int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
+    string UserName = Convert.ToString(Context.Session.GetString("UserName"));
+
+    var permission = _permissionHelper.GetUserPermissionsForController(sessionUserId, UserName, "Role");
+
+    bool canView = permission?.CanView ?? false;
+    bool canCreate = permission?.CanCreate ?? false;
+    bool canEdit = permission?.CanEdit ?? false;
+    bool canDelete = permission?.CanDelete ?? false;
 }
 
 <h2 class="mb-4">Roles</h2>
