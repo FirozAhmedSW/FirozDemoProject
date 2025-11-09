@@ -4,14 +4,22 @@
     ViewData["Title"] = "Roles";
 }
 
-<h2>Roles</h2>
+<h2 class="mb-4">Roles</h2>
 
 <div class="row mb-3">
-    <div class="col-md-4">
-        <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search roles..." value="@ViewBag.Search" />
+    <div class="col-md-5">
+        <div class="input-group">
+            <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search roles..." value="@ViewBag.Search" />
+            <button id="btnSearch" class="btn btn-primary" type="button" title="Search">
+                <i class="bi bi-search"></i> Search
+            </button>
+            <button id="clearSearch" class="btn btn-outline-secondary" type="button" title="Clear Search">✖</button>
+        </div>
     </div>
-    <div class="col-md-8 text-end">
-        <a asp-action="Create" class="btn btn-primary">Create New Role</a>
+    <div class="col-md-7 text-end">
+        <a asp-action="Create" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Create New Role
+        </a>
     </div>
 </div>
 
@@ -20,30 +28,32 @@
         <tr>
             <th>Name</th>
             <th>Description</th>
-            <th>Is Active</th>
-            <th>Actions</th>
+            <th class="text-center">Is Active</th>
+            <th class="text-center">Actions</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var role in Model)
+        @if (Model != null && Model.Any())
+        {
+            foreach (var role in Model)
+            {
+                <tr>
+                    <td>@role.Name</td>
+                    <td>@role.Description</td>
+                    <td class="text-center">
+                        <input type="checkbox" class="isActiveCheckbox" data-id="@role.Id" @(role.IsActive ? "checked" : "") />
+                    </td>
+                    <td class="text-center">
+                        <a asp-action="Edit" asp-route-id="@role.Id" class="btn btn-sm btn-warning me-1">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@role.Id" class="btn btn-sm btn-danger">Delete</a>
+                    </td>
+                </tr>
+            }
+        }
+        else
         {
             <tr>
-                <td>@role.Name</td>
-                <td>@role.Description</td>
-                <td class="text-center">
-                    @if (role.IsActive)
-                    {
-                        <input type="checkbox" class="isActiveCheckbox" data-id="@role.Id" checked />
-                    }
-                    else
-                    {
-                        <input type="checkbox" class="isActiveCheckbox" data-id="@role.Id" />
-                    }
-                </td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@role.Id" class="btn btn-sm btn-warning">Edit</a>
-                    <a asp-action="Delete" asp-route-id="@role.Id" class="btn btn-sm btn-danger">Delete</a>
-                </td>
+                <td colspan="4" class="text-center text-muted">No roles found.</td>
             </tr>
         }
     </tbody>
@@ -106,25 +116,32 @@
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Toggle IsActive via AJAX
+        // ✅ Toggle IsActive via AJAX
         $(document).on('change', '.isActiveCheckbox', function () {
             const id = $(this).data('id');
             const isActive = $(this).is(':checked');
 
             $.post('@Url.Action("ToggleActive")', { id, isActive }, function (res) {
-                if (!res.success) alert("Failed to update status.");
+                if (!res.success) alert("⚠️ Failed to update status.");
             });
         });
 
-        // Search filter
-        let typingTimer;
-        const delay = 400;
+        // 🔍 Search button click or Enter key
+        $('#btnSearch').on('click', function () {
+            const val = $('#searchBox').val();
+            window.location.href = '@Url.Action("Index")?search=' + encodeURIComponent(val);
+        });
 
-        $('#searchBox').on('keyup', function () {
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(() => {
-                window.location.href = '@Url.Action("Index")?search=' + $(this).val();
-            }, delay);
+        $('#searchBox').on('keypress', function (e) {
+            if (e.which === 13) { // Enter key
+                $('#btnSearch').click();
+            }
+        });
+
+        // ❌ Clear Search button
+        $('#clearSearch').on('click', function () {
+            $('#searchBox').val('');
+            window.location.href = '@Url.Action("Index")';
         });
     </script>
 }

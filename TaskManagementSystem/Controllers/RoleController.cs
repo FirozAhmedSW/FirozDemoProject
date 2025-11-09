@@ -27,13 +27,17 @@ namespace TaskManagementSystem.Controllers
             }
 
             var query = _context.Roles.AsQueryable();
+
             if (!string.IsNullOrWhiteSpace(search))
             {
+                string searchLower = search.ToLower();
+
                 query = query.Where(r =>
-                    (r.Name ?? "").Contains(search) ||
-                    (r.Description ?? "").Contains(search)
+                    (r.Name ?? "").ToLower().Contains(searchLower) ||
+                    (r.Description ?? "").ToLower().Contains(searchLower)
                 );
             }
+
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
 
@@ -50,6 +54,7 @@ namespace TaskManagementSystem.Controllers
 
             return View(roles);
         }
+
 
         [HttpPost]
         public async Task<IActionResult> ToggleActive(int id, bool isActive)
@@ -69,6 +74,10 @@ namespace TaskManagementSystem.Controllers
 
             return Ok(new { success = true });
         }
+
+
+
+
 
         public IActionResult Create()
         {
