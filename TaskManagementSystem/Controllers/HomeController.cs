@@ -22,24 +22,13 @@ namespace TaskManagementSystem.Controllers
 
         public async Task<IActionResult> Index()
         {
-
-            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-            await _actilogger.LogAsync(userName, "View Dashboard", $"Dashboard View this User : '{userName}'. ");
-
-
-            // ✅ Session থেকে username নেওয়া
             var name = HttpContext.Session.GetString("UserName");
             ViewBag.UserName = name;
-
-            // ✅ Database থেকে শেষ ৫টি Activity Log নেওয়া
             var recentLogs = await _context.ActivityLogs
                 .OrderByDescending(x => x.CreatedAt)
                 .Take(5)
                 .ToListAsync();
-
-            // ✅ View এ পাঠানো
             ViewBag.RecentLogs = recentLogs;
-
             return View();
         }
 

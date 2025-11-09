@@ -20,10 +20,7 @@ namespace TaskManagementSystem.Controllers
         public async Task<IActionResult> Index(string searchString = "", int page = 1, int pageSize = 5)
         {
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-            await _activityLogger.LogAsync(userName, "View Client", $"Client View this User : '{userName}'. ");
-
-            var query = _context.Persons
-                                .Where(p => !p.IsDeleted && p.CreatedByUserName == userName);
+            var query = _context.Persons.Where(p => !p.IsDeleted && p.CreatedByUserName == userName);
 
             if (!string.IsNullOrWhiteSpace(searchString))
                 query = query.Where(p => p.Name.Contains(searchString));
@@ -45,15 +42,11 @@ namespace TaskManagementSystem.Controllers
             return View(persons);
         }
 
-
-
-        // GET: Person/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Person/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Person model)
@@ -75,7 +68,6 @@ namespace TaskManagementSystem.Controllers
             return View(model);
         }
 
-        // GET: Person/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
@@ -92,7 +84,6 @@ namespace TaskManagementSystem.Controllers
             return View(person);
         }
 
-        // GET: Person/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
@@ -107,7 +98,6 @@ namespace TaskManagementSystem.Controllers
             return View(person);
         }
 
-        // POST: Person/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Person model)
@@ -124,7 +114,6 @@ namespace TaskManagementSystem.Controllers
                 if (person == null || person.IsDeleted)
                     return NotFound();
 
-                // শুধু Name, Address, Phone update
                 person.Name = model.Name;
                 person.Address = model.Address;
                 person.Phone = model.Phone;
@@ -159,7 +148,6 @@ namespace TaskManagementSystem.Controllers
 
 
 
-        // POST: Person/Delete/5 (soft delete)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -170,7 +158,7 @@ namespace TaskManagementSystem.Controllers
             var person = await _context.Persons.FindAsync(id);
             if (person != null && !person.IsDeleted)
             {
-                person.IsDeleted = true; // Soft delete
+                person.IsDeleted = true; 
                 await _context.SaveChangesAsync();
             }
 

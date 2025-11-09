@@ -18,9 +18,6 @@ namespace TaskManagementSystem.Controllers
             _environment = environment;
         }
 
-        // =======================
-        // INDEX - list tasks
-        // =======================
         public IActionResult Index(string search)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -42,23 +39,14 @@ namespace TaskManagementSystem.Controllers
                 .OrderByDescending(t => t.CreatedAt)
                 .ToList();
 
-            ViewData["Search"] = search; // Keep search text in view
+            ViewData["Search"] = search; 
 
             return View(tasks);
         }
-
-
-        // =======================
-        // CREATE - GET
-        // =======================
         public IActionResult Create()
         {
             return View();
         }
-
-        // =======================
-        // CREATE - POST
-        // =======================
         [HttpPost]
         public IActionResult Create(TaskItem task, IFormFile? ImageFile)
         {
@@ -96,10 +84,6 @@ namespace TaskManagementSystem.Controllers
 
             return View(task);
         }
-
-        // =======================
-        // EDIT - GET
-        // =======================
         public IActionResult Edit(int id)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -111,10 +95,6 @@ namespace TaskManagementSystem.Controllers
 
             return View(task);
         }
-
-        // =======================
-        // EDIT - POST
-        // =======================
         [HttpPost]
         public IActionResult Edit(TaskItem task, IFormFile? ImageFile)
         {
@@ -157,9 +137,6 @@ namespace TaskManagementSystem.Controllers
             return View(task);
         }
 
-        // =======================
-        // DELETE
-        // =======================
         public IActionResult Delete(int id)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -178,9 +155,6 @@ namespace TaskManagementSystem.Controllers
             return RedirectToAction("Index");
         }
 
-        // =======================
-        // DETAILS
-        // =======================
         public IActionResult Details(int id)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -192,7 +166,6 @@ namespace TaskManagementSystem.Controllers
 
             return View(task);
         }
-
 
         [HttpGet]
         public async Task<IActionResult> TaskReport(string? search, DateTime? from, DateTime? to)

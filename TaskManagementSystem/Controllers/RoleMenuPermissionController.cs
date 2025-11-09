@@ -19,13 +19,9 @@ namespace TaskManagementSystem.Controllers
             _context = context;
             _activityLogger = activityLogger;
         }
-        // GET: RoleMenuPermission
         public async Task<IActionResult> Index(int? userId)
         {
-            // ✅ ইউজারনেম Session থেকে নেওয়া
             var currentUser = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-            // 1️⃣ All users for dropdown
             ViewBag.Users = await _context.Users
                 .Where(u => !u.IsDeleted && u.IsActive)
                 .Select(u => new { u.Id, u.UserName, u.RoleId })
@@ -36,7 +32,6 @@ namespace TaskManagementSystem.Controllers
                 ViewBag.SelectedUserId = null;
                 ViewBag.SelectedUserRole = null;
 
-                // ✅ Activity Log for viewing without selecting user
                 await _activityLogger.LogAsync(
                     currentUser,
                     "View RoleMenuPermission",
@@ -46,7 +41,6 @@ namespace TaskManagementSystem.Controllers
                 return View(new List<RoleMenuPermission>());
             }
 
-            // 2️⃣ Find selected user
             var user = await _context.Users
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive);
@@ -55,8 +49,6 @@ namespace TaskManagementSystem.Controllers
             {
                 ViewBag.SelectedUserId = userId;
                 ViewBag.SelectedUserRole = "Not Found";
-
-                // ✅ Activity Log for invalid user
                 await _activityLogger.LogAsync(
                     currentUser,
                     "View RoleMenuPermission",
@@ -66,7 +58,6 @@ namespace TaskManagementSystem.Controllers
                 return View(new List<RoleMenuPermission>());
             }
 
-            // 3️⃣ Load permissions for that user’s role
             var permissions = await _context.RoleMenuPermissions
                 .Include(rmp => rmp.Menu)
                 .Include(rmp => rmp.Role)
@@ -77,7 +68,6 @@ namespace TaskManagementSystem.Controllers
             ViewBag.SelectedUserId = userId;
             ViewBag.SelectedUserRole = user.Role?.Name ?? "No Role";
 
-            // ✅ Activity Log for viewing permissions
             await _activityLogger.LogAsync(
                 currentUser,
                 "View RoleMenuPermission",
@@ -90,10 +80,7 @@ namespace TaskManagementSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdatePermissions(int userId, List<RoleMenuPermission> Permissions)
         {
-            // ✅ Current user session
             var currentUser = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-            // ✅ Find the user for logging
             var user = await _context.Users
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive);
@@ -101,7 +88,6 @@ namespace TaskManagementSystem.Controllers
             if (user == null)
             {
                 TempData["Error"] = "User not found!";
-                // ✅ Log attempt for invalid user
                 await _activityLogger.LogAsync(
                     currentUser,
                     "Update RoleMenuPermission",
@@ -124,10 +110,7 @@ namespace TaskManagementSystem.Controllers
                     dbPerm.UpdatedAt = DateTime.Now;
                 }
             }
-
             await _context.SaveChangesAsync();
-
-            // ✅ Log the update
             await _activityLogger.LogAsync(
                 currentUser,
                 "Update RoleMenuPermission",
@@ -138,8 +121,6 @@ namespace TaskManagementSystem.Controllers
             return RedirectToAction("Index", new { userId = userId });
         }
 
-
-        // GET: RoleMenuPermission/Create
         public IActionResult Create()
         {
             LoadDropdowns();
@@ -152,7 +133,6 @@ namespace TaskManagementSystem.Controllers
         {
             if (ModelState.IsValid)
             {
-                // ✅ Check if already exists
                 var exists = await _context.RoleMenuPermissions
                     .AnyAsync(rmp => rmp.RoleId == permission.RoleId && rmp.MenuId == permission.MenuId);
 
@@ -166,21 +146,15 @@ namespace TaskManagementSystem.Controllers
                 permission.IsActive = true;
                 permission.IsDeleted = false;
                 permission.CreatedAt = DateTime.Now;
-
                 _context.Add(permission);
                 await _context.SaveChangesAsync();
-
-                // ✅ Current user for logging
                 var currentUser = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-                // ✅ Load role and menu for logging
                 var role = await _context.Roles.FindAsync(permission.RoleId);
                 var menu = await _context.Menus.FindAsync(permission.MenuId);
 
                 string actionType = "Create RoleMenuPermission";
                 string logMessage = $"User '{currentUser}' created a new permission for Role '{role?.Name}' and Menu '{menu?.Title}'.";
 
-                // ✅ Activity Log
                 await _activityLogger.LogAsync(currentUser, actionType, logMessage);
 
                 return RedirectToAction(nameof(Index));
@@ -190,7 +164,6 @@ namespace TaskManagementSystem.Controllers
             return View(permission);
         }
 
-        // GET: RoleMenuPermission/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -214,18 +187,12 @@ namespace TaskManagementSystem.Controllers
                 permission.UpdatedAt = DateTime.Now;
                 _context.Update(permission);
                 await _context.SaveChangesAsync();
-
-                // ✅ Current user from session
                 var currentUser = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-                // ✅ Load role and menu for logging
                 var role = await _context.Roles.FindAsync(permission.RoleId);
                 var menu = await _context.Menus.FindAsync(permission.MenuId);
 
                 string actionType = "Edit RoleMenuPermission";
                 string logMessage = $"User '{currentUser}' edited permission for Role '{role?.Name}' and Menu '{menu?.Title}'.";
-
-                // ✅ Activity Log
                 await _activityLogger.LogAsync(currentUser, actionType, logMessage);
 
                 return RedirectToAction(nameof(Index));
@@ -235,7 +202,6 @@ namespace TaskManagementSystem.Controllers
             return View(permission);
         }
 
-        // GET: RoleMenuPermission/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -250,7 +216,6 @@ namespace TaskManagementSystem.Controllers
             return View(permission);
         }
 
-        // POST: RoleMenuPermission/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -260,26 +225,20 @@ namespace TaskManagementSystem.Controllers
             {
                 _context.RoleMenuPermissions.Remove(permission);
                 await _context.SaveChangesAsync();
-
-                // ✅ Current user from session
                 var currentUser = HttpContext.Session.GetString("UserName") ?? "Unknown";
 
-                // ✅ Load role and menu for logging
                 var role = await _context.Roles.FindAsync(permission.RoleId);
                 var menu = await _context.Menus.FindAsync(permission.MenuId);
 
                 string actionType = "Delete RoleMenuPermission";
                 string logMessage = $"User '{currentUser}' deleted permission for Role '{role?.Name}' and Menu '{menu?.Title}'.";
 
-                // ✅ Activity Log
                 await _activityLogger.LogAsync(currentUser, actionType, logMessage);
             }
 
             return RedirectToAction(nameof(Index));
         }
 
-
-        // Helper
         private void LoadDropdowns(int? selectedRoleId = null, int? selectedMenuId = null)
         {
             ViewBag.Roles = new SelectList(_context.Roles.Where(r => r.IsActive), "Id", "Name", selectedRoleId);

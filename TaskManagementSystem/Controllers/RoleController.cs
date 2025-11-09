@@ -18,26 +18,14 @@ namespace TaskManagementSystem.Controllers
             _activityLogger = activityLogger;
         }
 
-        // GET: Roles with search and pagination
         public async Task<IActionResult> Index(string? search, int page = 1)
         {
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-            if (string.IsNullOrWhiteSpace(search))
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                await _activityLogger.LogAsync(
-                    userName,
-                    "View Role List",
-                    $"User '{userName}' viewed the role list."
-                );
+                await _activityLogger.LogAsync(userName, "Search Role", $"User '{userName}' searched roles with keyword: '{search}'.");
             }
-            else
-            {
-                await _activityLogger.LogAsync(
-                    userName,
-                    "Search Role",
-                    $"User '{userName}' searched roles with keyword: '{search}'."
-                );
-            }
+
             var query = _context.Roles.AsQueryable();
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -72,25 +60,16 @@ namespace TaskManagementSystem.Controllers
 
             role.IsActive = isActive;
             role.UpdatedAt = DateTime.Now;
-
             _context.Roles.Update(role);
             await _context.SaveChangesAsync();
-
-            // ✅ ইউজারনেম Session থেকে নেওয়া
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-            // ✅ Action টাইপ ও বার্তা তৈরি
             string actionType = isActive ? "Activate Role" : "Deactivate Role";
             string logMessage = $"User '{userName}' {(isActive ? "activated" : "deactivated")} role: '{role.Name}' (ID: {role.Id}).";
-
-            // ✅ Activity Log রেকর্ড
             await _activityLogger.LogAsync(userName, actionType, logMessage);
 
             return Ok(new { success = true });
         }
 
-
-        // GET: Create Role
         public IActionResult Create()
         {
             return View();
@@ -103,19 +82,11 @@ namespace TaskManagementSystem.Controllers
             if (ModelState.IsValid)
             {
                 role.CreatedAt = DateTime.Now;
-
-                // যদি checkbox uncheck থাকে, IsActive default false হবে
                 _context.Add(role);
                 await _context.SaveChangesAsync();
-
-                // ✅ ইউজারনেম Session থেকে নেওয়া
                 var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-                // ✅ লগ বার্তা তৈরি
                 string actionType = "Create Role";
                 string logMessage = $"User '{userName}' created a new role: '{role.Name}' (ID: {role.Id}).";
-
-                // ✅ Activity Log রেকর্ড
                 await _activityLogger.LogAsync(userName, actionType, logMessage);
 
                 return RedirectToAction(nameof(Index));
@@ -124,9 +95,6 @@ namespace TaskManagementSystem.Controllers
             return View(role);
         }
 
-
-
-        // GET: Edit Role
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -147,18 +115,13 @@ namespace TaskManagementSystem.Controllers
                 try
                 {
                     role.UpdatedAt = DateTime.Now;
-
                     _context.Update(role);
                     await _context.SaveChangesAsync();
-
-                    // ✅ ইউজারনেম Session থেকে নেওয়া
                     var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
 
-                    // ✅ লগ বার্তা তৈরি
                     string actionType = "Edit Role";
                     string logMessage = $"User '{userName}' edited role: '{role.Name}' (ID: {role.Id}).";
 
-                    // ✅ Activity Log রেকর্ড
                     await _activityLogger.LogAsync(userName, actionType, logMessage);
                 }
                 catch (DbUpdateConcurrencyException)
@@ -175,8 +138,6 @@ namespace TaskManagementSystem.Controllers
             return View(role);
         }
 
-
-        // GET: Delete Role
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -194,15 +155,9 @@ namespace TaskManagementSystem.Controllers
             {
                 _context.Roles.Remove(role);
                 await _context.SaveChangesAsync();
-
-                // ✅ ইউজারনেম Session থেকে নেওয়া
                 var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-                // ✅ লগ বার্তা তৈরি
                 string actionType = "Delete Role";
                 string logMessage = $"User '{userName}' deleted role: '{role.Name}' (ID: {role.Id}).";
-
-                // ✅ Activity Log রেকর্ড
                 await _activityLogger.LogAsync(userName, actionType, logMessage);
             }
 

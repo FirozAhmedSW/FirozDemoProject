@@ -28,46 +28,34 @@ namespace TaskManagementSystem.Controllers
         public async Task<IActionResult> Index(string? user,string? Useraction, DateTime? from, DateTime? to, int page = 1)
         {
             var query = _context.ActivityLogs.AsQueryable();
-
-            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-            await _logger.LogAsync(userName, "View ActivityLogs", $"ActivityLogs View this User : '{userName}'. ");
-
-            // Filter by user
             if (!string.IsNullOrEmpty(user))
                 query = query.Where(x => x.UserName != null && x.UserName.Contains(user));
-            // Filter by user
             if (!string.IsNullOrEmpty(Useraction))
                 query = query.Where(x => x.ActionType != null && x.ActionType.Contains(Useraction));
 
-            // Filter by date range
             if (from.HasValue && to.HasValue)
             {
-                var toDate = to.Value.AddDays(1); // Include the entire 'to' day
+                var toDate = to.Value.AddDays(1); 
                 query = query.Where(x => x.CreatedAt >= from && x.CreatedAt < toDate);
             }
 
-            // Total count for pagination info
             var totalCount = await query.CountAsync();
 
-            // Calculate total pages
             var totalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
 
-            // Get paginated logs
             var logs = await query
                 .OrderByDescending(l => l.CreatedAt)
                 .Skip((page - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
 
-            // Pass pagination and filter info to ViewData
             ViewData["CurrentUser"] = user ?? "";
             ViewData["CurrectAction"] = Useraction ?? "";
             ViewData["From"] = from?.ToString("yyyy-MM-dd");
             ViewData["To"] = to?.ToString("yyyy-MM-dd");
             ViewData["CurrentPage"] = page;
             ViewData["TotalPages"] = totalPages;
-            ViewData["TotalCount"] = totalCount; // ✅ Add this for "Showing X–Y of Z logs"
-
+            ViewData["TotalCount"] = totalCount; 
             return View(logs);
         }
 

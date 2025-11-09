@@ -22,17 +22,11 @@ namespace TaskManagementSystem.Controllers
             _logger = logger;
         }
 
-        // ✅ Index / Main Report Page with Filters + Pagination
         [HttpGet]
         public async Task<IActionResult> Index(string? month, DateTime? from, DateTime? to, int page = 1, int pageSize = 10)
         {
-
-            var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-            await _logger.LogAsync(userName, "View Expense", $"Expense View this User : '{userName}'. ");
             var expenses = _context.Expenses.Where(x => !x.IsDeleted).AsQueryable();
 
-            // 🔹 Filter by From/To date (priority)
             if (from.HasValue || to.HasValue)
             {
                 if (from.HasValue)
@@ -44,7 +38,6 @@ namespace TaskManagementSystem.Controllers
                 ViewBag.ToDate = to?.ToString("yyyy-MM-dd");
                 ViewBag.SelectedMonth = null;
             }
-            // 🔹 Filter by month if no date range
             else if (!string.IsNullOrEmpty(month))
             {
                 if (DateTime.TryParse($"{month}-01", out var selectedMonth))
@@ -57,7 +50,6 @@ namespace TaskManagementSystem.Controllers
             }
             else
             {
-                // Default: current month
                 var currentMonth = DateTime.Now.Month;
                 var currentYear = DateTime.Now.Year;
                 expenses = expenses.Where(x => x.Date.HasValue &&
@@ -68,7 +60,6 @@ namespace TaskManagementSystem.Controllers
                 ViewBag.ToDate = null;
             }
 
-            // 🔹 Pagination
             var totalRecords = expenses.Count();
             var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalRecords / pageSize)); // Always at least 1
 
@@ -89,14 +80,12 @@ namespace TaskManagementSystem.Controllers
             return View(expensesList);
         }
 
-        // ✅ GET: Create Form
         [HttpGet]
         public IActionResult Create()
         {
             return View();
         }
 
-        // ✅ POST: Create Expense
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create(Expense model)
@@ -121,7 +110,6 @@ namespace TaskManagementSystem.Controllers
             return View(model);
         }
 
-        // ✅ GET: Edit
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -130,7 +118,6 @@ namespace TaskManagementSystem.Controllers
             return View(expense);
         }
 
-        // ✅ POST: Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit(Expense model)
@@ -150,15 +137,12 @@ namespace TaskManagementSystem.Controllers
             return View(model);
         }
 
-        // ✅ POST: Delete
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
             var expense = _context.Expenses.Find(id);
             if (expense == null) return NotFound();
-
-            // Soft delete
             expense.IsDeleted = true;
             _context.SaveChanges();
 
@@ -292,8 +276,6 @@ namespace TaskManagementSystem.Controllers
             return File(ms.ToArray(), "application/pdf", "ExpenseReport.pdf");
         }
 
-        // ── Footer Class ──
-        // ── Footer Class ──
         public class PdfFooter : PdfPageEventHelper
         {
             private readonly string _userName;

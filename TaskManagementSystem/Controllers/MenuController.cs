@@ -23,12 +23,7 @@ namespace TaskManagementSystem.Controllers
         public async Task<IActionResult> Index(string? search, int page = 1)
         {
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-            if (string.IsNullOrWhiteSpace(search))
-            {
-                await _activityLogger.LogAsync(userName, "View Menu", $"User '{userName}' viewed the menu list.");
-            }
-            else
+            if (!string.IsNullOrWhiteSpace(search))
             {
                 await _activityLogger.LogAsync(userName, "Search Menu", $"User '{userName}' searched for '{search}'.");
             }
@@ -71,11 +66,7 @@ namespace TaskManagementSystem.Controllers
 
             _context.Menus.Update(menu);
             await _context.SaveChangesAsync();
-
-            // ✅ ইউজারনেম Session থেকে নেওয়া
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-
-            // ✅ Active / Inactive অনুযায়ী Log message তৈরি
             string actionType = isActive ? "Activate Menu" : "Deactivate Menu";
             string logMessage = $"User '{userName}' {(isActive ? "activated" : "deactivated")} menu: '{menu.Title}' (ID: {menu.Id}).";
 
@@ -84,8 +75,6 @@ namespace TaskManagementSystem.Controllers
             return Ok(new { success = true });
         }
 
-
-        // GET: Menu/Create
         public IActionResult Create()
         {
             LoadParentMenus();
@@ -116,8 +105,6 @@ namespace TaskManagementSystem.Controllers
             return View(menu);
         }
 
-
-        // GET: Menu/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -129,7 +116,6 @@ namespace TaskManagementSystem.Controllers
             return View(menu);
         }
 
-        // POST: Menu/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Menu menu)
@@ -165,7 +151,6 @@ namespace TaskManagementSystem.Controllers
             return View(menu);
         }
 
-        // GET: Menu/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -178,7 +163,6 @@ namespace TaskManagementSystem.Controllers
             return View(menu);
         }
 
-        // POST: Menu/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -197,10 +181,6 @@ namespace TaskManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-
-        // ====================
-        // Helper Methods
-        // ====================
         private void LoadParentMenus(int? excludeId = null)
         {
             var parents = _context.Menus
