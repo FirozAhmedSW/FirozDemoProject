@@ -1,6 +1,7 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.Person>
 @inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
 @{
+    ViewData["Title"] = "Client Info";
     int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
     string UserName = Convert.ToString(Context.Session.GetString("UserName"));
 
@@ -9,7 +10,6 @@
 }
 
 
-<h2>Persons List</h2>
 <div class="d-flex justify-content-between mb-3">
     @if (canCreate)
     {
