@@ -1,5 +1,15 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.Person>
+@inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
+@{
+    int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
+    string UserName = Convert.ToString(Context.Session.GetString("UserName"));
 
+    var permission = _permissionHelper.GetUserPermissionsForController(sessionUserId, UserName, "Menu");
+
+    bool canView = permission?.CanView ?? false;
+    bool canEdit = permission?.CanEdit ?? false;
+    bool canDelete = permission?.CanDelete ?? false;
+}
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
@@ -21,17 +31,28 @@
                 <td>@person.Address</td>
                 <td>@person.Phone</td>
                 <td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@person.Id" class="btn btn-info btn-sm">Details</a>
-                    <a asp-action="Edit" asp-route-id="@person.Id" class="btn btn-warning btn-sm">Edit</a>
-                    <form asp-action="Delete" method="post" style="display:inline">
-                        <input type="hidden" name="id" value="@person.Id" />
-                            @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to delete this person?');">
-                            Delete
-                        </button>
-                    </form>
+                    <td>
+                        @if (canView)
+                        {
+                            <a asp-action="Details" asp-route-id="@person.Id" class="btn btn-info btn-sm">Details</a>
+                        }
+                        @if (canEdit)
+                        {
+                        <a asp-action="Edit" asp-route-id="@person.Id" class="btn btn-warning btn-sm">Edit</a>
+                        }
+                        @if (canDelete)
+                        {
+                        <form asp-action="Delete" method="post" style="display:inline">
+                            <input type="hidden" name="id" value="@person.Id" />
+                                @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this person?');">
+                                Delete
+                            </button>
+                        </form>
+                        }
+
+                   
                 </td>
 
 

@@ -1,9 +1,20 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.Person>
+@inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
+@{
+    int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
+    string UserName = Convert.ToString(Context.Session.GetString("UserName"));
+
+    var permission = _permissionHelper.GetUserPermissionsForController(sessionUserId, UserName, "Menu");
+    bool canCreate = permission?.CanCreate ?? false;
+}
+
 
 <h2>Persons List</h2>
-
 <div class="d-flex justify-content-between mb-3">
-    <a asp-action="Create" class="btn btn-primary">Add New Person</a>
+    @if (canCreate)
+    {
+        <a asp-action="Create" class="btn btn-primary">Add New Person</a>
+    }
     <input type="text" id="searchInput" class="form-control w-25" placeholder="Search Name...">
 </div>
 
