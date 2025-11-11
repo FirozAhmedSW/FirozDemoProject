@@ -2,7 +2,7 @@
 @inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
 @using TaskManagementSystem.Models.Permission
 @{
-    ViewData["Title"] = "Task";
+    ViewData["Title"] = "📋 Task Management";
     var searchText = ViewData["Search"] as string ?? "";
     int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
     string UserName = Convert.ToString(Context.Session.GetString("UserName"));
@@ -15,8 +15,6 @@
 
 <style>
     .maincontainer {
-        padding: 20px;
-        max-width: 1400px;
         margin: 0 auto;
     }
 
@@ -361,20 +359,6 @@
 else
 {
     <div class="maincontainer">
-        <!-- Header -->
-        <div class="page-header">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                    <h2>
-                        📋 Task Management
-                        <span class="stats-badge">
-                            <i class="bi bi-list-check"></i> @Model.Count() Tasks
-                        </span>
-                    </h2>
-                </div>
-            </div>
-        </div>
-
         <!-- Action Bar -->
         <div class="action-bar">
             <div class="d-flex justify-content-between align-items-center">
