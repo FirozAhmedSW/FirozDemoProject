@@ -1,6 +1,12 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.User>
+@inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
 @{
     ViewData["Title"] = "User Info";
+    int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
+    string UserName = Convert.ToString(Context.Session.GetString("UserName"));
+
+    var permission = _permissionHelper.GetUserPermissionsForController(sessionUserId, UserName, "Account");
+    bool canCreate = permission?.CanCreate ?? false;
 }
 
 <div class="row align-items-center mb-3">
@@ -8,7 +14,10 @@
         <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search user... (type to filter)" value="@ViewBag.SearchText" />
     </div>
     <div class="col-md-8 text-end">
-        <a href="@Url.Action("Create", "Account")" class="btn btn-primary">Add User</a>
+        @if (canCreate)
+        {
+            <a href="@Url.Action("Create", "Account")" class="btn btn-primary">Add User</a>
+        }
         <a href="@Url.Action("UserReport", "Account")" class="btn btn-success ms-2">Generate Report</a>
     </div>
 </div>

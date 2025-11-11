@@ -1,4 +1,15 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.DailyNote>
+@inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
+
+@{
+    int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
+    string UserName = Convert.ToString(Context.Session.GetString("UserName"));
+    var permission = _permissionHelper.GetUserPermissionsForController(sessionUserId, UserName, "Expense");
+    bool canView = permission?.CanView ?? false;
+    bool canCreate = permission?.CanCreate ?? false;
+    bool canEdit = permission?.CanEdit ?? false;
+    bool canDelete = permission?.CanDelete ?? false;
+}
 
 @if (!Model.Any())
 {
@@ -16,9 +27,18 @@ else
                     <p class="card-text">@note.Note</p>
                     <small class="text-muted">Created: @note.CreatedAt.ToString("dd MMM yyyy HH:mm")</small>
                     <div class="mt-2">
-                        <a asp-action="Edit" asp-route-id="@note.Id" class="btn btn-sm btn-warning">Edit</a>
-                        <a asp-action="Delete" asp-route-id="@note.Id" class="btn btn-sm btn-danger">Delete</a>
-                        <a asp-action="Details" asp-route-id="@note.Id" class="btn btn-sm btn-info">Details</a>
+                        @if (canEdit)
+                        {
+                            <a asp-action="Edit" asp-route-id="@note.Id" class="btn btn-sm btn-warning">Edit</a>
+                        }
+                        @if (canDelete)
+                        {
+                            <a asp-action="Delete" asp-route-id="@note.Id" class="btn btn-sm btn-danger">Delete</a>
+                        }
+                        @if (canView)
+                        {
+                            <a asp-action="Details" asp-route-id="@note.Id" class="btn btn-sm btn-info">Details</a>
+                        }
                     </div>
                 </div>
             </div>

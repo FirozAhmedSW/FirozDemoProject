@@ -1,7 +1,12 @@
 ﻿@model IEnumerable<TaskManagementSystem.Models.DailyNote>
-
+@inject TaskManagementSystem.Helpers.PermissionHelper _permissionHelper
 @{
     ViewData["Title"] = "My Daily Notes";
+    int sessionUserId = Convert.ToInt32(Context.Session.GetInt32("UserId"));
+    string UserName = Convert.ToString(Context.Session.GetString("UserName"));
+
+    var permission = _permissionHelper.GetUserPermissionsForController(sessionUserId, UserName, "DailyNote");
+    bool canCreate = permission?.CanCreate ?? false;
 }
 
 <h2 class="mb-4">@ViewData["Title"]</h2>
@@ -11,9 +16,12 @@
         <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search notes..." value="@ViewBag.SearchText" />
     </div>
     <div class="col-md-6 text-end">
-        <a asp-action="Create" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add New Note
-        </a>
+        @if (canCreate)
+         {
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Note
+            </a>
+         }
     </div>
 </div>
 
