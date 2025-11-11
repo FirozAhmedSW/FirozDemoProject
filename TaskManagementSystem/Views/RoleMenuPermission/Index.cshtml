@@ -39,7 +39,7 @@
                             <option value="">-- Select User --</option>
                             @foreach (var user in ViewBag.Users)
                             {
-                                <option value="@user.Id" selected)>@user.UserName</option>
+                                <option value="@user.Id" selected>@user.UserName</option>
                             }
                         </select>
                     </div>
@@ -101,6 +101,7 @@
                                         <td>
                                             <strong>@item.Menu?.Title</strong>
                                             <input type="hidden" name="Permissions[@i].Id" value="@item.Id" />
+                                            <input type="hidden" name="Permissions[@i].RoleId" value="@item.RoleId" />
                                             <input type="hidden" name="Permissions[@i].MenuId" value="@item.MenuId" />
                                         </td>
                                         <td class="text-center">
@@ -156,6 +157,7 @@
                                         <i class="bi bi-menu-button"></i> <strong>@item.Menu?.Title</strong>
                                     </h6>
                                     <input type="hidden" name="Permissions[@i].Id" value="@item.Id" />
+                                    <input type="hidden" name="Permissions[@i].RoleId" value="@item.RoleId" />
                                     <input type="hidden" name="Permissions[@i].MenuId" value="@item.MenuId" />
                                 </div>
                                 <div class="card-body">
